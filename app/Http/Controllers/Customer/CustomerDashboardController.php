@@ -9,10 +9,13 @@ use App\Models\Item;
 use App\Models\ItemBulk;
 use App\Models\TemporaryUpload;
 use App\Models\SlpPricing;
+use App\Models\Location;
+use App\Models\ItemAdditionalDetail;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Log;
 
 class CustomerDashboardController extends Controller
 {
@@ -86,12 +89,22 @@ class CustomerDashboardController extends Controller
         $user = Auth::user();
         $serviceTypes = ServiceType::active()->get();
         $slpPricing = SlpPricing::getPricingTiers();
+        $locations = Location::active()->get();
 
-        return view('customer.services.add-single-item', compact('user', 'serviceTypes', 'slpPricing'));
+        return view('customer.services.add-single-item', compact('user', 'serviceTypes', 'slpPricing', 'locations'));
     }
 
     public function storeSingleItem(Request $request)
     {
+        /** @var User $user */
+        $user = Auth::user();
+
+        // Handle Item Additional Details (Remittance and Insured) separately
+        if ($request->service_type === 'remittance' || $request->service_type === 'insured') {
+            return $this->storeItemAdditionalDetail($request, $user);
+        }
+
+        // Validation rules for regular items
         $rules = [
             'service_type_id' => 'required|exists:service_types,id',
             'receiver_name' => 'required|string|max:255',
@@ -99,16 +112,20 @@ class CustomerDashboardController extends Controller
             'amount' => 'required|numeric|min:0',
         ];
 
-        // Add weight validation for SLP Courier
         $serviceType = ServiceType::find($request->service_type_id);
+
+        // Add specific validation based on service type
         if ($serviceType && $serviceType->has_weight_pricing) {
             $rules['weight'] = 'required|numeric|min:1|max:40000';
+            $rules['destination_post_office_id'] = 'required|exists:locations,id';
+        }
+
+        if ($serviceType && $serviceType->name === 'COD') {
+            $rules['destination_post_office_id'] = 'required|exists:locations,id';
+            $rules['commission'] = 'required|numeric|min:0';
         }
 
         $request->validate($rules);
-
-        /** @var User $user */
-        $user = Auth::user();
 
         // Calculate postage
         $postage = 0;
@@ -118,8 +135,11 @@ class CustomerDashboardController extends Controller
             $postage = $serviceType->base_price ?? 0;
         }
 
-        // Calculate commission (5% of amount)
-        $commission = $request->amount * 0.05;
+        // Calculate commission (2% of amount for COD)
+        $commission = 0;
+        if ($serviceType->name === 'COD') {
+            $commission = $request->amount * 0.02;
+        }
 
         $item = Item::create([
             'receiver_name' => $request->receiver_name,
@@ -131,6 +151,7 @@ class CustomerDashboardController extends Controller
             'created_by' => $user->id,
             'postage' => $postage,
             'commission' => $commission,
+            'destination_post_office_id' => $request->destination_post_office_id,
             'notes' => $request->notes,
         ]);
 
@@ -138,7 +159,7 @@ class CustomerDashboardController extends Controller
         ItemBulk::create([
             'sender_name' => $user->name,
             'service_type_id' => $request->service_type_id,
-            'location_id' => 1, // Default location, can be modified
+            'location_id' => $user->location_id ?? 1,
             'created_by' => $user->id,
             'category' => 'single_item',
             'total_items' => 1,
@@ -149,6 +170,34 @@ class CustomerDashboardController extends Controller
         ]);
 
         return redirect()->route('customer.services.items')->with('success', 'Item added successfully! Tracking Number: ' . $item->tracking_number);
+    }
+
+    private function storeItemAdditionalDetail(Request $request, User $user)
+    {
+        $request->validate([
+            'receiver_name' => 'required|string|max:255',
+            'address' => 'required|string',
+            'amount' => 'required|numeric|min:0',
+            'commission' => 'required|numeric|min:0',
+            'service_type' => 'required|in:remittance,insured',
+        ]);
+
+        // Determine the type based on service_type
+        $type = $request->service_type === 'remittance' ? ItemAdditionalDetail::TYPE_REMITTANCE : ItemAdditionalDetail::TYPE_INSURED;
+
+        $itemDetail = ItemAdditionalDetail::create([
+            'type' => $type,
+            'amount' => $request->amount,
+            'commission' => $request->commission,
+            'created_by' => $user->id,
+            'location_id' => $user->location_id ?? 1,
+            'receiver_name' => $request->receiver_name,
+            'receiver_address' => $request->address,
+            'status' => 'pending',
+        ]);
+
+        $typeLabel = $type === ItemAdditionalDetail::TYPE_REMITTANCE ? 'Remittance' : 'Insured';
+        return redirect()->route('customer.services.items')->with('success', $typeLabel . ' record created successfully! Reference: IAD-' . $itemDetail->id);
     }
 
     public function bulkUpload()
@@ -216,7 +265,10 @@ class CustomerDashboardController extends Controller
     public function getSlpPrice(Request $request)
     {
         $weight = $request->input('weight');
+        Log::info('Pricing request received', ['weight' => $weight]);
+
         $price = SlpPricing::calculatePrice($weight);
+        Log::info('Calculated price', ['weight' => $weight, 'price' => $price]);
 
         return response()->json([
             'price' => $price,

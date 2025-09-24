@@ -22,6 +22,7 @@ class Item extends Model
         'tracking_number',
         'postage',
         'commission',
+        'destination_post_office_id',
         'notes',
     ];
 
@@ -62,6 +63,14 @@ class Item extends Model
     public function scopeDelivered($query)
     {
         return $query->where('status', 'delivered');
+    }
+
+    /**
+     * Get the destination post office
+     */
+    public function destinationPostOffice()
+    {
+        return $this->belongsTo(Location::class, 'destination_post_office_id');
     }
 
     // Auto-generate tracking number

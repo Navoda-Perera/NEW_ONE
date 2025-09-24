@@ -46,4 +46,11 @@ class ServiceType extends Model
     const SLP_COURIER = 'SLP_COURIER';
     const COD = 'COD';
     const REMITTANCE = 'REMITTANCE';
+    const COD_POSTAGE = 'COD_POSTAGE';
+    const POST_CARD = 'POST_CARD';
+    const POSTAL_ID_ONE_DAY = 'POSTAL_ID_ONE_DAY';
+    const POSTAL_ID_NORMAL = 'POSTAL_ID_NORMAL';
+    const REGISTER_FEE = 'REGISTER_FEE';
+    const AR_CARD = 'AR_CARD';
+    const DUPLICATE_GR = 'DUPLICATE_GR';
 }

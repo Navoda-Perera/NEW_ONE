@@ -24,6 +24,7 @@ return new class extends Migration
             $table->string('tracking_number')->unique()->nullable();
             $table->decimal('postage', 10, 2);
             $table->decimal('commission', 10, 2)->default(0);
+            $table->foreignId('destination_post_office_id')->nullable()->constrained('locations')->onDelete('set null');
             $table->text('notes')->nullable();
             $table->timestamps();
         });

@@ -27,7 +27,7 @@ class ServiceTypeSeeder extends Seeder
                 'code' => ServiceType::SLP_COURIER,
                 'description' => 'Sri Lanka Post Courier service with weight-based pricing',
                 'is_active' => true,
-                'has_weight_pricing' => true,
+                'has_weight_pricing' => true, // SLP Courier uses weight-based pricing
                 'base_price' => null,
             ],
             [
@@ -36,20 +36,15 @@ class ServiceTypeSeeder extends Seeder
                 'description' => 'Cash on Delivery service for payment collection',
                 'is_active' => true,
                 'has_weight_pricing' => false,
-                'base_price' => 100.00,
-            ],
-            [
-                'name' => 'Remittance',
-                'code' => ServiceType::REMITTANCE,
-                'description' => 'Money transfer and remittance service',
-                'is_active' => true,
-                'has_weight_pricing' => false,
-                'base_price' => 75.00,
+                'base_price' => 150.00,
             ],
         ];
 
         foreach ($serviceTypes as $serviceType) {
-            ServiceType::create($serviceType);
+            ServiceType::updateOrCreate(
+                ['code' => $serviceType['code']],
+                $serviceType
+            );
         }
     }
 }
