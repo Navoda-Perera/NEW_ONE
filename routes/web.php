@@ -77,6 +77,7 @@ Route::prefix('customer')->name('customer.')->group(function () {
             Route::get('/items', [CustomerDashboardController::class, 'items'])->name('items');
             Route::get('/bulk-status/{id}', [CustomerDashboardController::class, 'bulkStatus'])->name('bulk-status');
             Route::post('/get-slp-price', [CustomerDashboardController::class, 'getSlpPrice'])->name('get-slp-price');
+            Route::post('/get-postal-price', [CustomerDashboardController::class, 'getPostalPrice'])->name('get-postal-price');
         });
     });
 });

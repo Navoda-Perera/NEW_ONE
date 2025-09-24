@@ -9,6 +9,7 @@ use App\Models\Item;
 use App\Models\ItemBulk;
 use App\Models\TemporaryUpload;
 use App\Models\SlpPricing;
+use App\Models\PostPricing;
 use App\Models\Location;
 use App\Models\ItemAdditionalDetail;
 use Illuminate\Http\Request;
@@ -89,9 +90,11 @@ class CustomerDashboardController extends Controller
         $user = Auth::user();
         $serviceTypes = ServiceType::active()->get();
         $slpPricing = SlpPricing::getPricingTiers();
+        $normalPostPricing = PostPricing::forNormalPost()->get();
+        $registerPostPricing = PostPricing::forRegisterPost()->get();
         $locations = Location::active()->get();
 
-        return view('customer.services.add-single-item', compact('user', 'serviceTypes', 'slpPricing', 'locations'));
+        return view('customer.services.add-single-item', compact('user', 'serviceTypes', 'slpPricing', 'normalPostPricing', 'registerPostPricing', 'locations'));
     }
 
     public function storeSingleItem(Request $request)
@@ -120,16 +123,31 @@ class CustomerDashboardController extends Controller
             $rules['destination_post_office_id'] = 'required|exists:locations,id';
         }
 
+        if ($serviceType && ($serviceType->name === 'Normal Post' || $serviceType->name === 'Register Post')) {
+            $rules['weight'] = 'required|numeric|min:1|max:2000'; // Max 2kg for postal services
+        }
+
         if ($serviceType && $serviceType->name === 'COD') {
+            $rules['weight'] = 'required|numeric|min:1';
+            $rules['postage'] = 'required|numeric|min:0';
+            $rules['sender_name'] = 'required|string|max:255';
+            $rules['sender_address'] = 'required|string';
+            $rules['sender_mobile'] = 'required|string|max:15';
+            $rules['receiver_mobile'] = 'required|string|max:15';
             $rules['destination_post_office_id'] = 'required|exists:locations,id';
-            $rules['commission'] = 'required|numeric|min:0';
         }
 
         $request->validate($rules);
 
         // Calculate postage
         $postage = 0;
-        if ($serviceType->has_weight_pricing) {
+        if ($serviceType->name === 'Normal Post') {
+            $postage = PostPricing::calculatePrice($request->weight, PostPricing::TYPE_NORMAL) ?? 0;
+        } elseif ($serviceType->name === 'Register Post') {
+            $postage = PostPricing::calculatePrice($request->weight, PostPricing::TYPE_REGISTER) ?? 0;
+        } elseif ($serviceType->name === 'COD') {
+            $postage = $request->postage ?? 0; // Use frontend calculated postage for COD
+        } elseif ($serviceType->has_weight_pricing) {
             $postage = SlpPricing::calculatePrice($request->weight) ?? 0;
         } else {
             $postage = $serviceType->base_price ?? 0;
@@ -153,6 +171,10 @@ class CustomerDashboardController extends Controller
             'commission' => $commission,
             'destination_post_office_id' => $request->destination_post_office_id,
             'notes' => $request->notes,
+            'sender_name' => $request->sender_name,
+            'sender_address' => $request->sender_address,
+            'sender_mobile' => $request->sender_mobile,
+            'receiver_mobile' => $request->receiver_mobile,
         ]);
 
         // Create item bulk record for tracking
@@ -198,9 +220,7 @@ class CustomerDashboardController extends Controller
 
         $typeLabel = $type === ItemAdditionalDetail::TYPE_REMITTANCE ? 'Remittance' : 'Insured';
         return redirect()->route('customer.services.items')->with('success', $typeLabel . ' record created successfully! Reference: IAD-' . $itemDetail->id);
-    }
-
-    public function bulkUpload()
+    }    public function bulkUpload()
     {
         /** @var User $user */
         $user = Auth::user();
@@ -269,6 +289,30 @@ class CustomerDashboardController extends Controller
 
         $price = SlpPricing::calculatePrice($weight);
         Log::info('Calculated price', ['weight' => $weight, 'price' => $price]);
+
+        return response()->json([
+            'price' => $price,
+            'formatted_price' => $price ? 'LKR ' . number_format($price, 2) : 'No pricing available'
+        ]);
+    }
+
+    // AJAX method to get postal pricing for weight (Normal/Register Post)
+    public function getPostalPrice(Request $request)
+    {
+        $weight = $request->input('weight');
+        $serviceType = $request->input('service_type');
+
+        Log::info('Postal pricing request received', ['weight' => $weight, 'service_type' => $serviceType]);
+
+        $price = null;
+
+        if ($serviceType === 'Normal Post') {
+            $price = PostPricing::calculatePrice($weight, PostPricing::TYPE_NORMAL);
+        } elseif ($serviceType === 'Register Post') {
+            $price = PostPricing::calculatePrice($weight, PostPricing::TYPE_REGISTER);
+        }
+
+        Log::info('Calculated postal price', ['weight' => $weight, 'service_type' => $serviceType, 'price' => $price]);
 
         return response()->json([
             'price' => $price,

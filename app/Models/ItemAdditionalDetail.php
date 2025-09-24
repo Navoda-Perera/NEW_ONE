@@ -19,7 +19,7 @@ class ItemAdditionalDetail extends Model
         'location_id',
         'receiver_name',
         'receiver_address',
-        'status'
+        'status',
     ];
 
     protected $casts = [

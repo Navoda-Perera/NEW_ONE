@@ -19,6 +19,7 @@ class DatabaseSeeder extends Seeder
         // Seed service types and pricing
         $this->call(ServiceTypeSeeder::class);
         $this->call(SlpPricingSeeder::class);
+        $this->call(PostPricingSeeder::class);
 
         // Create sample admin user
         User::create([

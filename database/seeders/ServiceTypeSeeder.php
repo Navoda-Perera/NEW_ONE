@@ -15,19 +15,27 @@ class ServiceTypeSeeder extends Seeder
     {
         $serviceTypes = [
             [
+                'name' => 'Normal Post',
+                'code' => ServiceType::NORMAL_POST,
+                'description' => 'Standard postal service with weight-based pricing',
+                'is_active' => true,
+                'has_weight_pricing' => true,
+                'base_price' => null,
+            ],
+            [
                 'name' => 'Register Post',
                 'code' => ServiceType::REGISTER_POST,
-                'description' => 'Standard registered postal service with tracking',
+                'description' => 'Registered postal service with tracking and weight-based pricing',
                 'is_active' => true,
-                'has_weight_pricing' => false,
-                'base_price' => 50.00,
+                'has_weight_pricing' => true,
+                'base_price' => null,
             ],
             [
                 'name' => 'SLP Courier',
                 'code' => ServiceType::SLP_COURIER,
                 'description' => 'Sri Lanka Post Courier service with weight-based pricing',
                 'is_active' => true,
-                'has_weight_pricing' => true, // SLP Courier uses weight-based pricing
+                'has_weight_pricing' => true,
                 'base_price' => null,
             ],
             [
@@ -35,8 +43,8 @@ class ServiceTypeSeeder extends Seeder
                 'code' => ServiceType::COD,
                 'description' => 'Cash on Delivery service for payment collection',
                 'is_active' => true,
-                'has_weight_pricing' => false,
-                'base_price' => 150.00,
+                'has_weight_pricing' => true,
+                'base_price' => null,
             ],
         ];
 

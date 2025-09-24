@@ -24,6 +24,10 @@ class Item extends Model
         'commission',
         'destination_post_office_id',
         'notes',
+        'sender_name',
+        'sender_address',
+        'sender_mobile',
+        'receiver_mobile',
     ];
 
     protected $casts = [

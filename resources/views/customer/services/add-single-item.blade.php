@@ -69,6 +69,24 @@
         font-weight: 600;
         color: #155724;
     }
+
+    .normal-post-display {
+        background: linear-gradient(135deg, #e3f2fd 0%, #f0f8ff 100%);
+        border: 2px solid #2196f3;
+        border-radius: 10px;
+        padding: 15px;
+        font-weight: 600;
+        color: #0d47a1;
+    }
+
+    .register-post-display {
+        background: linear-gradient(135deg, #ffebee 0%, #fff5f5 100%);
+        border: 2px solid #f44336;
+        border-radius: 10px;
+        padding: 15px;
+        font-weight: 600;
+        color: #b71c1c;
+    }
 </style>
 @endpush
 
@@ -76,6 +94,11 @@
 <div class="page-header">
     <div class="container">
         <div class="row align-items-center">
+            <div class="col-auto">
+                <a href="{{ route('customer.dashboard') }}" class="btn btn-outline-light me-3">
+                    <i class="bi bi-arrow-left me-2"></i>Back
+                </a>
+            </div>
             <div class="col">
                 <h2 class="mb-0 fw-bold"><i class="bi bi-plus-circle me-3"></i>Add Single Item</h2>
                 <p class="mb-0 opacity-75">Submit your postal service items quickly and easily</p>
@@ -146,6 +169,9 @@ document.addEventListener('DOMContentLoaded', function() {
     const serviceSelect = document.getElementById('service_type_id');
     const dynamicFields = document.getElementById('dynamicFields');
 
+    // Store locations data for JavaScript use
+    const locations = @json($locations);
+
     serviceSelect.addEventListener('change', function() {
         const selectedOption = this.options[this.selectedIndex];
         const serviceType = selectedOption.dataset.type;
@@ -190,7 +216,7 @@ document.addEventListener('DOMContentLoaded', function() {
 
         let specificFields = '';
 
-        if (serviceType === 'SLP Courier' || serviceType === 'COD') {
+        if (serviceType === 'SLP Courier' || serviceType.includes('COD') || serviceType === 'Normal Post' || serviceType === 'Register Post') {
             specificFields += `
                 <div class="field-group">
                     <h5 class="fw-bold text-primary mb-3">
@@ -206,18 +232,27 @@ document.addEventListener('DOMContentLoaded', function() {
                             <div class="form-text">
                                 <i class="bi bi-info-circle me-1"></i>Weight determines postage cost
                             </div>
-                        </div>
+                        </div>`;
+
+            if (serviceType === 'SLP Courier' || serviceType.includes('COD')) {
+                specificFields += `
                         <div class="col-md-6">
                             <label for="destination_post_office_id" class="form-label fw-semibold">
                                 <i class="bi bi-building me-1"></i>Destination Post Office
                             </label>
                             <select id="destination_post_office_id" class="form-select" name="destination_post_office_id" required>
-                                <option value="">Select Destination</option>
-                                @foreach($locations as $location)
-                                    <option value="{{ $location->id }}">{{ $location->name }}</option>
-                                @endforeach
+                                <option value="">Select Destination</option>`;
+
+                locations.forEach(location => {
+                    specificFields += `<option value="${location.id}">${location.name}</option>`;
+                });
+
+                specificFields += `
                             </select>
-                        </div>
+                        </div>`;
+            }
+
+            specificFields += `
                     </div>
                 </div>
             `;
@@ -240,23 +275,178 @@ document.addEventListener('DOMContentLoaded', function() {
                         </div>
                     </div>
                 `;
-            }
-
-            if (serviceType === 'COD') {
+            } else if (serviceType === 'Normal Post') {
                 specificFields += `
                     <div class="field-group">
-                        <h5 class="fw-bold text-success mb-3">
-                            <i class="bi bi-percent me-2"></i>Commission Calculation
+                        <h5 class="fw-bold text-info mb-3">
+                            <i class="bi bi-envelope me-2"></i>Normal Post Calculation
                         </h5>
-                        <div class="calculation-display">
+                        <div class="normal-post-display">
                             <label class="form-label mb-2 fw-semibold">
-                                <i class="bi bi-cash-stack me-1"></i>Commission (2%)
+                                <i class="bi bi-cash-coin me-1"></i>Postage Cost
                             </label>
-                            <input type="number" class="form-control" id="commission_display" readonly>
-                            <input type="hidden" name="commission" id="commission">
+                            <input type="text" class="form-control" id="postage_display" readonly
+                                   placeholder="Enter weight to calculate postal cost">
                             <small class="text-muted mt-2 d-block">
-                                <i class="bi bi-calculator me-1"></i>Automatically calculated at 2% of amount
+                                <i class="bi bi-info-circle me-1"></i>Normal postal service pricing based on weight
                             </small>
+                        </div>
+                    </div>
+                `;
+            } else if (serviceType === 'Register Post') {
+                specificFields += `
+                    <div class="field-group">
+                        <h5 class="fw-bold text-danger mb-3">
+                            <i class="bi bi-shield-check me-2"></i>Register Post Calculation
+                        </h5>
+                        <div class="register-post-display">
+                            <label class="form-label mb-2 fw-semibold">
+                                <i class="bi bi-cash-coin me-1"></i>Postage Cost
+                            </label>
+                            <input type="text" class="form-control" id="postage_display" readonly
+                                   placeholder="Enter weight to calculate registered postal cost">
+                            <small class="text-muted mt-2 d-block">
+                                <i class="bi bi-shield-check me-1"></i>Registered postal service with tracking
+                            </small>
+                        </div>
+                    </div>
+                `;
+            }
+
+            if (serviceType.includes('COD')) {
+                specificFields += `
+                    <div class="field-group">
+                        <h5 class="fw-bold text-warning mb-3">
+                            <i class="bi bi-person-badge me-2"></i>Sender Details
+                        </h5>
+                        <div class="row mb-3">
+                            <div class="col-md-6">
+                                <label for="sender_name" class="form-label fw-semibold">
+                                    <i class="bi bi-person me-1"></i>Sender Name
+                                </label>
+                                <input id="sender_name" type="text" class="form-control" name="sender_name"
+                                       placeholder="Enter sender's full name" required>
+                            </div>
+                            <div class="col-md-6">
+                                <label for="sender_mobile" class="form-label fw-semibold">
+                                    <i class="bi bi-telephone me-1"></i>Sender Mobile
+                                </label>
+                                <input id="sender_mobile" type="text" class="form-control" name="sender_mobile"
+                                       placeholder="07XXXXXXXX" required>
+                            </div>
+                        </div>
+                        <div class="mb-3">
+                            <label for="sender_address" class="form-label fw-semibold">
+                                <i class="bi bi-geo-alt me-1"></i>Sender Address
+                            </label>
+                            <textarea id="sender_address" class="form-control" name="sender_address" rows="2"
+                                      placeholder="Enter sender's complete address" required></textarea>
+                        </div>
+                    </div>
+
+                    <div class="field-group">
+                        <h5 class="fw-bold text-primary mb-3">
+                            <i class="bi bi-box-seam me-2"></i>Package Details
+                        </h5>
+                        <div class="row mb-3">
+                            <div class="col-md-6">
+                                <label for="weight_select" class="form-label fw-semibold">
+                                    <i class="bi bi-speedometer2 me-1"></i>Weight & Postage
+                                </label>
+                                <select id="weight_select" class="form-select" name="weight" required>
+                                    <option value="">Select Weight Range</option>
+                                    <option value="250" data-price="200">250g - LKR 200.00</option>
+                                    <option value="500" data-price="250">500g - LKR 250.00</option>
+                                    <option value="1000" data-price="350">1000g - LKR 350.00</option>
+                                    <option value="2000" data-price="400">2000g - LKR 400.00</option>
+                                    <option value="3000" data-price="450">3000g - LKR 450.00</option>
+                                    <option value="4000" data-price="500">4000g - LKR 500.00</option>
+                                    <option value="5000" data-price="550">5000g - LKR 550.00</option>
+                                    <option value="6000" data-price="600">6000g - LKR 600.00</option>
+                                    <option value="7000" data-price="650">7000g - LKR 650.00</option>
+                                    <option value="8000" data-price="700">8000g - LKR 700.00</option>
+                                    <option value="9000" data-price="750">9000g - LKR 750.00</option>
+                                    <option value="10000" data-price="800">10000g - LKR 800.00</option>
+                                    <option value="15000" data-price="850">15000g - LKR 850.00</option>
+                                    <option value="20000" data-price="1100">20000g - LKR 1100.00</option>
+                                    <option value="25000" data-price="1600">25000g - LKR 1600.00</option>
+                                    <option value="30000" data-price="2100">30000g - LKR 2100.00</option>
+                                    <option value="35000" data-price="2600">35000g - LKR 2600.00</option>
+                                    <option value="40000" data-price="3100">40000g - LKR 3100.00</option>
+                                </select>
+                                <small class="text-muted">
+                                    <i class="bi bi-info-circle me-1"></i>Postage based on package weight
+                                </small>
+                            </div>
+                            <div class="col-md-6">
+                                <label class="form-label fw-semibold">
+                                    <i class="bi bi-currency-dollar me-1"></i>Postage Cost
+                                </label>
+                                <input type="text" class="form-control" id="postage_display" readonly placeholder="Select weight to see postage">
+                                <input type="hidden" name="postage" id="postage_value">
+                                <small class="text-muted">
+                                    <i class="bi bi-truck me-1"></i>Delivery charges included
+                                </small>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="field-group">
+                        <h5 class="fw-bold text-info mb-3">
+                            <i class="bi bi-person-check me-2"></i>Receiver Details
+                        </h5>
+                        <div class="row mb-3">
+                            <div class="col-md-6">
+                                <label for="receiver_mobile" class="form-label fw-semibold">
+                                    <i class="bi bi-telephone me-1"></i>Receiver Mobile
+                                </label>
+                                <input id="receiver_mobile" type="text" class="form-control" name="receiver_mobile"
+                                       placeholder="07XXXXXXXX" required>
+                            </div>
+                            <div class="col-md-6">
+                                <label for="destination_post_office_id" class="form-label fw-semibold">
+                                    <i class="bi bi-building me-1"></i>Delivery Post Office
+                                </label>
+                                <select id="destination_post_office_id" class="form-select" name="destination_post_office_id" required>
+                                    <option value="">Select Delivery Post Office</option>`;
+
+                locations.forEach(location => {
+                    specificFields += `<option value="${location.id}">${location.name}</option>`;
+                });
+
+                specificFields += `
+                                </select>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="field-group">
+                        <h5 class="fw-bold text-success mb-3">
+                            <i class="bi bi-calculator me-2"></i>COD Calculation
+                        </h5>
+                        <div class="row mb-3">
+                            <div class="col-md-4">
+                                <label class="form-label mb-2 fw-semibold">
+                                    <i class="bi bi-truck me-1"></i>Postage Cost
+                                </label>
+                                <input type="text" class="form-control" id="postage_cost_display" readonly placeholder="Select weight first">
+                                <small class="text-muted">Weight-based postage</small>
+                            </div>
+                            <div class="col-md-4">
+                                <label class="form-label mb-2 fw-semibold">
+                                    <i class="bi bi-cash-stack me-1"></i>Commission (2%)
+                                </label>
+                                <input type="number" class="form-control" id="commission_display" readonly>
+                                <input type="hidden" name="commission" id="commission">
+                                <small class="text-muted">2% of collection amount</small>
+                            </div>
+                            <div class="col-md-4">
+                                <label class="form-label mb-2 fw-semibold">
+                                    <i class="bi bi-receipt me-1"></i>Total Service Cost
+                                </label>
+                                <input type="text" class="form-control" id="total_cod_cost" readonly>
+                                <small class="text-muted">Postage + Commission</small>
+                            </div>
                         </div>
                     </div>
                 `;
@@ -286,7 +476,7 @@ document.addEventListener('DOMContentLoaded', function() {
 
         // Add event listeners for auto-calculations
         const amountField = document.getElementById('amount');
-        if (amountField && (serviceType === 'COD' || serviceType === 'Remittance' || serviceType === 'Insured')) {
+        if (amountField && (serviceType.includes('COD') || serviceType === 'Remittance' || serviceType === 'Insured')) {
             amountField.addEventListener('input', function() {
                 const amount = parseFloat(this.value) || 0;
                 const commission = amount * 0.02;
@@ -296,6 +486,56 @@ document.addEventListener('DOMContentLoaded', function() {
                 if (commissionField && commissionDisplay) {
                     commissionField.value = commission.toFixed(2);
                     commissionDisplay.value = commission.toFixed(2);
+                }
+
+                // Calculate total COD cost for COD service
+                if (serviceType.includes('COD')) {
+                    const postageValue = parseFloat(document.getElementById('postage_value')?.value) || 0;
+                    const totalCODCost = commission + postageValue;
+                    const totalCODField = document.getElementById('total_cod_cost');
+
+                    if (totalCODField) {
+                        totalCODField.value = 'LKR ' + totalCODCost.toFixed(2);
+                    }
+                }
+            });
+        }
+
+        // Add weight selection handler for COD
+        const weightSelect = document.getElementById('weight_select');
+        if (weightSelect && serviceType.includes('COD')) {
+            weightSelect.addEventListener('change', function() {
+                const selectedOption = this.options[this.selectedIndex];
+                const price = parseFloat(selectedOption.dataset.price) || 0;
+                const postageDisplay = document.getElementById('postage_display');
+                const postageValue = document.getElementById('postage_value');
+                const postageCostDisplay = document.getElementById('postage_cost_display');
+
+                if (postageDisplay && postageValue) {
+                    postageDisplay.value = 'LKR ' + price.toFixed(2);
+                    postageValue.value = price.toFixed(2);
+                }
+
+                if (postageCostDisplay) {
+                    postageCostDisplay.value = 'LKR ' + price.toFixed(2);
+                }
+
+                // Recalculate total COD cost
+                const amount = parseFloat(document.getElementById('amount')?.value) || 0;
+                const commission = amount * 0.02;
+                const totalCODCost = commission + price;
+                const totalCODField = document.getElementById('total_cod_cost');
+
+                if (totalCODField) {
+                    totalCODField.value = 'LKR ' + totalCODCost.toFixed(2);
+                }
+
+                // Update commission display
+                const commissionDisplay = document.getElementById('commission_display');
+                const commissionField = document.getElementById('commission');
+                if (commissionDisplay && commissionField) {
+                    commissionDisplay.value = commission.toFixed(2);
+                    commissionField.value = commission.toFixed(2);
                 }
             });
         }
@@ -324,6 +564,46 @@ document.addEventListener('DOMContentLoaded', function() {
                     })
                     .catch(error => {
                         console.error('Error fetching price:', error);
+                        const postageDisplay = document.getElementById('postage_display');
+                        if (postageDisplay) {
+                            postageDisplay.value = 'Error calculating price';
+                        }
+                    });
+                } else {
+                    const postageDisplay = document.getElementById('postage_display');
+                    if (postageDisplay) {
+                        postageDisplay.value = '';
+                    }
+                }
+            });
+        }
+
+        // Add weight-based pricing for Normal Post and Register Post
+        if (weightField && (serviceType === 'Normal Post' || serviceType === 'Register Post')) {
+            weightField.addEventListener('input', function() {
+                const weight = parseFloat(this.value) || 0;
+
+                if (weight > 0) {
+                    fetch('{{ route("customer.services.get-postal-price") }}', {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json',
+                            'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').getAttribute('content')
+                        },
+                        body: JSON.stringify({
+                            weight: weight,
+                            service_type: serviceType
+                        })
+                    })
+                    .then(response => response.json())
+                    .then(data => {
+                        const postageDisplay = document.getElementById('postage_display');
+                        if (postageDisplay) {
+                            postageDisplay.value = data.formatted_price || 'No pricing available';
+                        }
+                    })
+                    .catch(error => {
+                        console.error('Error fetching postal price:', error);
                         const postageDisplay = document.getElementById('postage_display');
                         if (postageDisplay) {
                             postageDisplay.value = 'Error calculating price';
