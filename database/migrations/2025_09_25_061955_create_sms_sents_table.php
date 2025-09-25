@@ -11,10 +11,12 @@ return new class extends Migration
      */
     public function up(): void
     {
-        Schema::create('temporary_uploads', function (Blueprint $table) {
+        Schema::create('sms_sents', function (Blueprint $table) {
             $table->id();
-            $table->foreignId('location_id')->constrained('locations')->onDelete('cascade');
-            $table->foreignId('user_id')->constrained('users')->onDelete('cascade');
+            $table->foreignId('item_id')->constrained('items')->onDelete('cascade');
+            $table->string('sender_mobile', 15);
+            $table->string('receiver_mobile', 15);
+            $table->enum('status', ['accept', 'addbeat', 'delivered', 'undelivered', 'return', 'delete']);
             $table->timestamps();
         });
     }
@@ -24,6 +26,6 @@ return new class extends Migration
      */
     public function down(): void
     {
-        Schema::dropIfExists('temporary_uploads');
+        Schema::dropIfExists('sms_sents');
     }
 };

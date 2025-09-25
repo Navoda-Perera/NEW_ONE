@@ -12,15 +12,6 @@ class TemporaryUpload extends Model
     protected $fillable = [
         'location_id',
         'user_id',
-        'filename',
-        'original_filename',
-        'total_items',
-        'status',
-        'notes',
-    ];
-
-    protected $casts = [
-        'total_items' => 'integer',
     ];
 
     // Relationships
@@ -39,14 +30,5 @@ class TemporaryUpload extends Model
         return $this->hasMany(TemporaryUploadAssociate::class, 'temporary_id');
     }
 
-    // Scopes
-    public function scopePending($query)
-    {
-        return $query->where('status', 'pending');
-    }
 
-    public function scopeCompleted($query)
-    {
-        return $query->where('status', 'completed');
-    }
 }

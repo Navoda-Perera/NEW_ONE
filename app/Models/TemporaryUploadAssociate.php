@@ -20,6 +20,7 @@ class TemporaryUploadAssociate extends Model
         'weight',
         'fix_amount',
         'receiver_name',
+        'barcode',
         'status',
     ];
 

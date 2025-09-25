@@ -7,6 +7,13 @@ use App\Http\Controllers\Customer\CustomerAuthController;
 use App\Http\Controllers\Customer\CustomerDashboardController;
 use App\Http\Controllers\PM\PMAuthController;
 use App\Http\Controllers\PM\PMDashboardController;
+use App\Http\Controllers\CompanyController;
+use App\Http\Controllers\PostmanController;
+// use App\Http\Controllers\DeliveryController; // Temporarily commented out
+// use App\Http\Controllers\DispatchController; // Temporarily commented out
+// use App\Http\Controllers\PaymentController; // Temporarily commented out
+// use App\Http\Controllers\ReceiptController; // Temporarily commented out
+// use App\Http\Controllers\TrackingController; // Temporarily commented out
 
 Route::get('/', function () {
     return view('welcome');
@@ -20,12 +27,20 @@ Route::prefix('admin')->name('admin.')->group(function () {
     Route::post('/register', [AdminAuthController::class, 'register']);
     Route::post('/logout', [AdminAuthController::class, 'logout'])->name('logout');
 
-    Route::middleware(['auth', 'role:admin,pm'])->group(function () {
+    Route::middleware(['auth', 'role:admin'])->group(function () {
         Route::get('/dashboard', [AdminDashboardController::class, 'index'])->name('dashboard');
         Route::get('/users', [AdminDashboardController::class, 'users'])->name('users.index');
         Route::get('/users/create', [AdminDashboardController::class, 'createUser'])->name('users.create');
         Route::post('/users', [AdminDashboardController::class, 'storeUser'])->name('users.store');
         Route::patch('/users/{user}/toggle-status', [AdminDashboardController::class, 'toggleUserStatus'])->name('users.toggle-status');
+
+        // Admin-only company management
+        Route::get('/companies/financial-report', [CompanyController::class, 'financialReport'])->name('companies.financial-report');
+
+        // System tracking and monitoring
+        // Route::get('/tracking/system-overview', [TrackingController::class, 'systemOverview'])->name('tracking.system-overview'); // Temporarily commented out
+        Route::get('/reports/financial', [AdminDashboardController::class, 'financialReports'])->name('reports.financial');
+        Route::get('/reports/operational', [AdminDashboardController::class, 'operationalReports'])->name('reports.operational');
     });
 });
 
@@ -50,6 +65,27 @@ Route::prefix('pm')->name('pm.')->group(function () {
 
         // User status toggle
         Route::patch('/users/{user}/toggle-status', [PMDashboardController::class, 'toggleUserStatus'])->name('users.toggle-status');
+
+        // Company management routes
+        Route::resource('companies', CompanyController::class);
+
+        // Postman management routes
+        Route::resource('postmen', PostmanController::class);
+
+        // Delivery management routes (temporarily commented out)
+        // Route::resource('deliveries', DeliveryController::class);
+        // Route::post('/deliveries/{delivery}/assign-items', [DeliveryController::class, 'assignItems'])->name('deliveries.assign-items');
+
+        // Dispatch management routes (temporarily commented out)
+        // Route::resource('dispatches', DispatchController::class);
+        // Route::post('/dispatches/{dispatch}/assign-items', [DispatchController::class, 'assignItems'])->name('dispatches.assign-items');
+
+        // Payment management routes (temporarily commented out)
+        // Route::resource('payments', PaymentController::class);
+
+        // Receipt management routes (temporarily commented out)
+        // Route::resource('receipts', ReceiptController::class);
+        // Route::get('/receipts/{receipt}/print', [ReceiptController::class, 'print'])->name('receipts.print');
     });
 });
 
@@ -79,5 +115,20 @@ Route::prefix('customer')->name('customer.')->group(function () {
             Route::post('/get-slp-price', [CustomerDashboardController::class, 'getSlpPrice'])->name('get-slp-price');
             Route::post('/get-postal-price', [CustomerDashboardController::class, 'getPostalPrice'])->name('get-postal-price');
         });
+
+        // Item tracking routes
+        Route::prefix('tracking')->name('tracking.')->group(function () {
+            Route::get('/', [CustomerDashboardController::class, 'trackingIndex'])->name('index');
+            Route::get('/item/{barcode}', [CustomerDashboardController::class, 'trackItem'])->name('item');
+            Route::post('/search', [CustomerDashboardController::class, 'searchItems'])->name('search');
+        });
     });
+});
+
+// Public tracking routes (no authentication required)
+Route::prefix('track')->name('track.')->group(function () {
+    Route::get('/', function () {
+        return view('public.tracking');
+    })->name('index');
+    // Route::post('/item', [TrackingController::class, 'publicTrack'])->name('item'); // Temporarily commented out
 });

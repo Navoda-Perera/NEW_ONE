@@ -111,23 +111,19 @@ class CustomerDashboardController extends Controller
         $rules = [
             'service_type_id' => 'required|exists:service_types,id',
             'receiver_name' => 'required|string|max:255',
-            'address' => 'required|string',
+            'address' => 'required|string', // Form field name is 'address' but maps to receiver_address in DB
             'amount' => 'required|numeric|min:0',
         ];
 
         $serviceType = ServiceType::find($request->service_type_id);
 
         // Add specific validation based on service type
-        if ($serviceType && $serviceType->has_weight_pricing) {
-            $rules['weight'] = 'required|numeric|min:1|max:40000';
-            $rules['destination_post_office_id'] = 'required|exists:locations,id';
-        }
-
         if ($serviceType && ($serviceType->name === 'Normal Post' || $serviceType->name === 'Register Post')) {
             $rules['weight'] = 'required|numeric|min:1|max:2000'; // Max 2kg for postal services
-        }
-
-        if ($serviceType && $serviceType->name === 'COD') {
+        } elseif ($serviceType && $serviceType->name === 'SLP Courier') {
+            $rules['weight'] = 'required|numeric|min:1|max:40000';
+            $rules['destination_post_office_id'] = 'required|exists:locations,id';
+        } elseif ($serviceType && $serviceType->name === 'COD') {
             $rules['weight'] = 'required|numeric|min:1';
             $rules['postage'] = 'required|numeric|min:0';
             $rules['sender_name'] = 'required|string|max:255';
@@ -161,20 +157,13 @@ class CustomerDashboardController extends Controller
 
         $item = Item::create([
             'receiver_name' => $request->receiver_name,
-            'address' => $request->address,
+            'receiver_address' => $request->address,
             'status' => 'accept',
             'weight' => $request->weight,
             'amount' => $request->amount,
-            'service_type_id' => $request->service_type_id,
+            'barcode' => $request->barcode, // Optional barcode from customer
             'created_by' => $user->id,
-            'postage' => $postage,
-            'commission' => $commission,
-            'destination_post_office_id' => $request->destination_post_office_id,
-            'notes' => $request->notes,
-            'sender_name' => $request->sender_name,
-            'sender_address' => $request->sender_address,
-            'sender_mobile' => $request->sender_mobile,
-            'receiver_mobile' => $request->receiver_mobile,
+            'updated_by' => $user->id,
         ]);
 
         // Create item bulk record for tracking
@@ -191,14 +180,14 @@ class CustomerDashboardController extends Controller
             'status' => 'pending',
         ]);
 
-        return redirect()->route('customer.services.items')->with('success', 'Item added successfully! Tracking Number: ' . $item->tracking_number);
+        return redirect()->route('customer.services.items')->with('success', 'Item added successfully! Barcode: ' . $item->barcode);
     }
 
     private function storeItemAdditionalDetail(Request $request, User $user)
     {
         $request->validate([
             'receiver_name' => 'required|string|max:255',
-            'address' => 'required|string',
+            'address' => 'required|string', // Form field name is 'address' but maps to receiver_address in DB
             'amount' => 'required|numeric|min:0',
             'commission' => 'required|numeric|min:0',
             'service_type' => 'required|in:remittance,insured',
@@ -258,13 +247,19 @@ class CustomerDashboardController extends Controller
             ->with('success', 'File uploaded successfully! Processing will begin shortly.');
     }
 
-    public function items()
+    public function items(Request $request)
     {
         /** @var User $user */
         $user = Auth::user();
-        $items = Item::with('serviceType')
-            ->where('created_by', $user->id)
-            ->orderBy('created_at', 'desc')
+
+        $query = Item::where('created_by', $user->id);
+
+        // Apply status filter if provided
+        if ($request->has('status') && $request->status) {
+            $query->where('status', $request->status);
+        }
+
+        $items = $query->orderBy('created_at', 'desc')
             ->paginate(15);
 
         return view('customer.services.items', compact('user', 'items'));

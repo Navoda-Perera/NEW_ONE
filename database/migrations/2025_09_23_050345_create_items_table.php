@@ -13,23 +13,14 @@ return new class extends Migration
     {
         Schema::create('items', function (Blueprint $table) {
             $table->id();
+            $table->string('barcode')->nullable();
             $table->string('receiver_name');
-            $table->text('address');
+            $table->text('receiver_address')->nullable();
             $table->enum('status', ['accept', 'dispatched', 'delivered', 'paid', 'returned', 'delete'])->default('accept');
             $table->decimal('weight', 8, 2)->nullable(); // in grams
             $table->decimal('amount', 10, 2);
+            $table->foreignId('created_by')->nullable()->constrained('users')->onDelete('set null');
             $table->foreignId('updated_by')->nullable()->constrained('users')->onDelete('set null');
-            $table->foreignId('service_type_id')->constrained('service_types')->onDelete('cascade');
-            $table->foreignId('created_by')->constrained('users')->onDelete('cascade');
-            $table->string('tracking_number')->unique()->nullable();
-            $table->decimal('postage', 10, 2);
-            $table->decimal('commission', 10, 2)->default(0);
-            $table->foreignId('destination_post_office_id')->nullable()->constrained('locations')->onDelete('set null');
-            $table->text('notes')->nullable();
-            $table->string('sender_name')->nullable();
-            $table->text('sender_address')->nullable();
-            $table->string('sender_mobile', 15)->nullable();
-            $table->string('receiver_mobile', 15)->nullable();
             $table->timestamps();
         });
     }

@@ -77,6 +77,7 @@
                                         <th>Tracking #</th>
                                         <th>Receiver</th>
                                         <th>Service Type</th>
+                                        <th>Barcode</th>
                                         <th>Amount</th>
                                         <th>Postage</th>
                                         <th>Status</th>
@@ -100,6 +101,14 @@
                                                 <span class="badge bg-info">{{ $item->serviceType->name }}</span>
                                                 @if($item->weight)
                                                     <br><small class="text-muted">{{ number_format($item->weight) }}g</small>
+                                                @endif
+                                            </td>
+                                            <td>
+                                                @if($item->barcode)
+                                                    <span class="badge bg-success">{{ $item->barcode }}</span>
+                                                @else
+                                                    <span class="badge bg-secondary">Pending</span>
+                                                    <br><small class="text-muted">PM will assign</small>
                                                 @endif
                                             </td>
                                             <td>LKR {{ number_format($item->amount, 2) }}</td>

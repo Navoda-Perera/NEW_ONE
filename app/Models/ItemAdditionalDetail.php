@@ -12,14 +12,12 @@ class ItemAdditionalDetail extends Model
     protected $table = 'item_additional_details';
 
     protected $fillable = [
+        'item_id',
         'type',
         'amount',
         'commission',
         'created_by',
         'location_id',
-        'receiver_name',
-        'receiver_address',
-        'status',
     ];
 
     protected $casts = [
@@ -48,6 +46,14 @@ class ItemAdditionalDetail extends Model
     }
 
     /**
+     * Get the item this additional detail belongs to
+     */
+    public function item()
+    {
+        return $this->belongsTo(Item::class);
+    }
+
+    /**
      * Get the user who created this record
      */
     public function creator()
@@ -69,21 +75,5 @@ class ItemAdditionalDetail extends Model
     public function calculateCommission()
     {
         return $this->amount * 0.02; // 2% commission
-    }
-
-    /**
-     * Scope for pending records
-     */
-    public function scopePending($query)
-    {
-        return $query->where('status', 'pending');
-    }
-
-    /**
-     * Scope for processed records
-     */
-    public function scopeProcessed($query)
-    {
-        return $query->where('status', 'processed');
     }
 }

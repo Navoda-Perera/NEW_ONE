@@ -204,6 +204,18 @@ document.addEventListener('DOMContentLoaded', function() {
                                name="amount" placeholder="0.00" required>
                     </div>
                 </div>
+                <div class="row mb-3" id="barcode-section" style="display: none;">
+                    <div class="col-md-6">
+                        <label for="barcode" class="form-label fw-semibold">
+                            <i class="bi bi-upc-scan me-1"></i>Barcode (Optional)
+                        </label>
+                        <input id="barcode" type="text" class="form-control" name="barcode"
+                               placeholder="Enter your item barcode if available">
+                        <div class="form-text">
+                            <i class="bi bi-info-circle me-1"></i>If you don't have a barcode, PM will assign one after accepting your item
+                        </div>
+                    </div>
+                </div>
                 <div class="mb-3">
                     <label for="address" class="form-label fw-semibold">
                         <i class="bi bi-geo-alt me-1"></i>Receiver Address
@@ -473,6 +485,16 @@ document.addEventListener('DOMContentLoaded', function() {
         }
 
         dynamicFields.innerHTML = commonFields + specificFields;
+
+        // Show/hide barcode section based on service type
+        const barcodeSection = document.getElementById('barcode-section');
+        if (barcodeSection) {
+            if (serviceType === 'SLP Courier' || serviceType.includes('COD')) {
+                barcodeSection.style.display = 'block';
+            } else {
+                barcodeSection.style.display = 'none';
+            }
+        }
 
         // Add event listeners for auto-calculations
         const amountField = document.getElementById('amount');

@@ -13,31 +13,18 @@ class ItemBulk extends Model
 
     protected $fillable = [
         'sender_name',
-        'service_type_id',
+        'service_type',
         'location_id',
         'created_by',
         'category',
-        'total_items',
-        'total_amount',
-        'total_postage',
-        'total_commission',
-        'status',
-        'notes',
+        'item_quantity',
     ];
 
     protected $casts = [
-        'total_items' => 'integer',
-        'total_amount' => 'decimal:2',
-        'total_postage' => 'decimal:2',
-        'total_commission' => 'decimal:2',
+        'item_quantity' => 'integer',
     ];
 
     // Relationships
-    public function serviceType()
-    {
-        return $this->belongsTo(ServiceType::class);
-    }
-
     public function location()
     {
         return $this->belongsTo(Location::class);
@@ -48,17 +35,7 @@ class ItemBulk extends Model
         return $this->belongsTo(User::class, 'created_by');
     }
 
-    // Scopes
-    public function scopePending($query)
-    {
-        return $query->where('status', 'pending');
-    }
-
-    public function scopeCompleted($query)
-    {
-        return $query->where('status', 'completed');
-    }
-
+    // Scopes for category enum
     public function scopeSingleItem($query)
     {
         return $query->where('category', 'single_item');
@@ -72,5 +49,31 @@ class ItemBulk extends Model
     public function scopeTemporaryList($query)
     {
         return $query->where('category', 'temporary_list');
+    }
+
+    // Scopes for service_type enum
+    public function scopeNormalPost($query)
+    {
+        return $query->where('service_type', 'NORMAL_POST');
+    }
+
+    public function scopeRegPost($query)
+    {
+        return $query->where('service_type', 'REG_POST');
+    }
+
+    public function scopeSlpCourier($query)
+    {
+        return $query->where('service_type', 'SLP_COURIER');
+    }
+
+    public function scopeCod($query)
+    {
+        return $query->where('service_type', 'COD');
+    }
+
+    public function scopeRemittance($query)
+    {
+        return $query->where('service_type', 'REMITTANCE');
     }
 }

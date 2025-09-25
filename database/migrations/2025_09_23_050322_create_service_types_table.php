@@ -13,8 +13,8 @@ return new class extends Migration
     {
         Schema::create('service_types', function (Blueprint $table) {
             $table->id();
-            $table->string('name'); // Register Post, SLP Courier, COD, Remittance
-            $table->string('code')->unique(); // REG_POST, SLP_COURIER, COD, REMITTANCE
+            $table->string('name'); // Normal Post, Register Post, SLP Courier, COD, Remittance
+            $table->string('code')->unique(); // NORMAL_POST, REG_POST, SLP_COURIER, COD, REMITTANCE
             $table->text('description')->nullable();
             $table->boolean('is_active')->default(true);
             $table->boolean('has_weight_pricing')->default(false); // For SLP Courier

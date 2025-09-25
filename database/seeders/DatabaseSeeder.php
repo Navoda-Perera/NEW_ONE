@@ -104,5 +104,12 @@ class DatabaseSeeder extends Seeder
             'role' => 'customer',
             'is_active' => false, // Inactive user for testing
         ]);
+
+        // Seed companies, postmen, and sample items
+        $this->call([
+            CompanySeeder::class,
+            PostmanSeeder::class,
+            ItemSeeder::class,
+        ]);
     }
 }
