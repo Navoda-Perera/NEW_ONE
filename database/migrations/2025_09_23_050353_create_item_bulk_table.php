@@ -14,7 +14,7 @@ return new class extends Migration
         Schema::create('item_bulk', function (Blueprint $table) {
             $table->id();
             $table->string('sender_name');
-            $table->enum('service_type', ['NORMAL_POST', 'REG_POST', 'SLP_COURIER', 'COD', 'REMITTANCE']);
+            $table->enum('service_type', ['register_post', 'slp_courier', 'cod', 'remittance'])->default('register_post');
             $table->foreignId('location_id')->constrained('locations')->onDelete('cascade');
             $table->foreignId('created_by')->constrained('users')->onDelete('cascade');
             $table->enum('category', ['single_item', 'temporary_list', 'bulk_list'])->default('single_item');

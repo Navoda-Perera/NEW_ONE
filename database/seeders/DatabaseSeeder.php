@@ -13,11 +13,10 @@ class DatabaseSeeder extends Seeder
      */
     public function run(): void
     {
-        // Seed locations first
+                // Seed locations first
         $this->call(LocationSeeder::class);
 
-        // Seed service types and pricing
-        $this->call(ServiceTypeSeeder::class);
+        // Seed pricing
         $this->call(SlpPricingSeeder::class);
         $this->call(PostPricingSeeder::class);
 

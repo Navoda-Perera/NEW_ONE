@@ -51,29 +51,24 @@ class ItemBulk extends Model
         return $query->where('category', 'temporary_list');
     }
 
-    // Scopes for service_type enum
-    public function scopeNormalPost($query)
+    // Scopes for service_type using direct column comparison
+    public function scopeRegisterPost($query)
     {
-        return $query->where('service_type', 'NORMAL_POST');
-    }
-
-    public function scopeRegPost($query)
-    {
-        return $query->where('service_type', 'REG_POST');
+        return $query->where('service_type', 'register_post');
     }
 
     public function scopeSlpCourier($query)
     {
-        return $query->where('service_type', 'SLP_COURIER');
+        return $query->where('service_type', 'slp_courier');
     }
 
     public function scopeCod($query)
     {
-        return $query->where('service_type', 'COD');
+        return $query->where('service_type', 'cod');
     }
 
     public function scopeRemittance($query)
     {
-        return $query->where('service_type', 'REMITTANCE');
+        return $query->where('service_type', 'remittance');
     }
 }

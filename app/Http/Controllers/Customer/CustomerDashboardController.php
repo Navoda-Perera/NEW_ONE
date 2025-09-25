@@ -4,9 +4,7 @@ namespace App\Http\Controllers\Customer;
 
 use App\Http\Controllers\Controller;
 use App\Models\User;
-use App\Models\ServiceType;
 use App\Models\Item;
-use App\Models\ItemBulk;
 use App\Models\TemporaryUpload;
 use App\Models\SlpPricing;
 use App\Models\PostPricing;
@@ -88,13 +86,9 @@ class CustomerDashboardController extends Controller
     {
         /** @var User $user */
         $user = Auth::user();
-        $serviceTypes = ServiceType::active()->get();
-        $slpPricing = SlpPricing::getPricingTiers();
-        $normalPostPricing = PostPricing::forNormalPost()->get();
-        $registerPostPricing = PostPricing::forRegisterPost()->get();
         $locations = Location::active()->get();
 
-        return view('customer.services.add-single-item', compact('user', 'serviceTypes', 'slpPricing', 'normalPostPricing', 'registerPostPricing', 'locations'));
+        return view('customer.services.add-single-item', compact('user', 'locations'));
     }
 
     public function storeSingleItem(Request $request)
@@ -102,58 +96,15 @@ class CustomerDashboardController extends Controller
         /** @var User $user */
         $user = Auth::user();
 
-        // Handle Item Additional Details (Remittance and Insured) separately
-        if ($request->service_type === 'remittance' || $request->service_type === 'insured') {
-            return $this->storeItemAdditionalDetail($request, $user);
-        }
-
-        // Validation rules for regular items
+        // Validation rules for items
         $rules = [
-            'service_type_id' => 'required|exists:service_types,id',
             'receiver_name' => 'required|string|max:255',
             'address' => 'required|string', // Form field name is 'address' but maps to receiver_address in DB
             'amount' => 'required|numeric|min:0',
+            'weight' => 'required|numeric|min:1|max:40000',
         ];
 
-        $serviceType = ServiceType::find($request->service_type_id);
-
-        // Add specific validation based on service type
-        if ($serviceType && ($serviceType->name === 'Normal Post' || $serviceType->name === 'Register Post')) {
-            $rules['weight'] = 'required|numeric|min:1|max:2000'; // Max 2kg for postal services
-        } elseif ($serviceType && $serviceType->name === 'SLP Courier') {
-            $rules['weight'] = 'required|numeric|min:1|max:40000';
-            $rules['destination_post_office_id'] = 'required|exists:locations,id';
-        } elseif ($serviceType && $serviceType->name === 'COD') {
-            $rules['weight'] = 'required|numeric|min:1';
-            $rules['postage'] = 'required|numeric|min:0';
-            $rules['sender_name'] = 'required|string|max:255';
-            $rules['sender_address'] = 'required|string';
-            $rules['sender_mobile'] = 'required|string|max:15';
-            $rules['receiver_mobile'] = 'required|string|max:15';
-            $rules['destination_post_office_id'] = 'required|exists:locations,id';
-        }
-
         $request->validate($rules);
-
-        // Calculate postage
-        $postage = 0;
-        if ($serviceType->name === 'Normal Post') {
-            $postage = PostPricing::calculatePrice($request->weight, PostPricing::TYPE_NORMAL) ?? 0;
-        } elseif ($serviceType->name === 'Register Post') {
-            $postage = PostPricing::calculatePrice($request->weight, PostPricing::TYPE_REGISTER) ?? 0;
-        } elseif ($serviceType->name === 'COD') {
-            $postage = $request->postage ?? 0; // Use frontend calculated postage for COD
-        } elseif ($serviceType->has_weight_pricing) {
-            $postage = SlpPricing::calculatePrice($request->weight) ?? 0;
-        } else {
-            $postage = $serviceType->base_price ?? 0;
-        }
-
-        // Calculate commission (2% of amount for COD)
-        $commission = 0;
-        if ($serviceType->name === 'COD') {
-            $commission = $request->amount * 0.02;
-        }
 
         $item = Item::create([
             'receiver_name' => $request->receiver_name,
@@ -164,20 +115,6 @@ class CustomerDashboardController extends Controller
             'barcode' => $request->barcode, // Optional barcode from customer
             'created_by' => $user->id,
             'updated_by' => $user->id,
-        ]);
-
-        // Create item bulk record for tracking
-        ItemBulk::create([
-            'sender_name' => $user->name,
-            'service_type_id' => $request->service_type_id,
-            'location_id' => $user->location_id ?? 1,
-            'created_by' => $user->id,
-            'category' => 'single_item',
-            'total_items' => 1,
-            'total_amount' => $request->amount,
-            'total_postage' => $postage,
-            'total_commission' => $commission,
-            'status' => 'pending',
         ]);
 
         return redirect()->route('customer.services.items')->with('success', 'Item added successfully! Barcode: ' . $item->barcode);
@@ -209,11 +146,19 @@ class CustomerDashboardController extends Controller
 
         $typeLabel = $type === ItemAdditionalDetail::TYPE_REMITTANCE ? 'Remittance' : 'Insured';
         return redirect()->route('customer.services.items')->with('success', $typeLabel . ' record created successfully! Reference: IAD-' . $itemDetail->id);
-    }    public function bulkUpload()
+    }
+
+    public function bulkUpload()
     {
         /** @var User $user */
         $user = Auth::user();
-        $serviceTypes = ServiceType::active()->get();
+
+        $serviceTypes = [
+            'register_post' => 'Register Post',
+            'slp_courier' => 'SLP Courier',
+            'cod' => 'COD',
+            'remittance' => 'Remittance'
+        ];
 
         return view('customer.services.bulk-upload', compact('user', 'serviceTypes'));
     }
@@ -221,7 +166,7 @@ class CustomerDashboardController extends Controller
     public function storeBulkUpload(Request $request)
     {
         $request->validate([
-            'service_type_id' => 'required|exists:service_types,id',
+            'service_type' => 'required|in:register_post,slp_courier,cod,remittance',
             'bulk_file' => 'required|file|mimes:csv,xlsx,xls|max:2048',
         ]);
 
@@ -235,12 +180,8 @@ class CustomerDashboardController extends Controller
 
         // Create temporary upload record
         $temporaryUpload = TemporaryUpload::create([
-            'location_id' => 1, // Default location
+            'location_id' => $user->location_id ?? 1,
             'user_id' => $user->id,
-            'filename' => $filename,
-            'original_filename' => $file->getClientOriginalName(),
-            'total_items' => 0, // Will be updated after processing
-            'status' => 'pending',
         ]);
 
         return redirect()->route('customer.services.bulk-status', $temporaryUpload->id)
@@ -291,27 +232,21 @@ class CustomerDashboardController extends Controller
         ]);
     }
 
-    // AJAX method to get postal pricing for weight (Normal/Register Post)
+    // AJAX method to get basic pricing for weight
     public function getPostalPrice(Request $request)
     {
         $weight = $request->input('weight');
-        $serviceType = $request->input('service_type');
 
-        Log::info('Postal pricing request received', ['weight' => $weight, 'service_type' => $serviceType]);
+        Log::info('Postal pricing request received', ['weight' => $weight]);
 
-        $price = null;
+        // Basic pricing calculation (could be customized as needed)
+        $price = $weight * 10; // 10 LKR per gram as basic pricing
 
-        if ($serviceType === 'Normal Post') {
-            $price = PostPricing::calculatePrice($weight, PostPricing::TYPE_NORMAL);
-        } elseif ($serviceType === 'Register Post') {
-            $price = PostPricing::calculatePrice($weight, PostPricing::TYPE_REGISTER);
-        }
-
-        Log::info('Calculated postal price', ['weight' => $weight, 'service_type' => $serviceType, 'price' => $price]);
+        Log::info('Calculated postal price', ['weight' => $weight, 'price' => $price]);
 
         return response()->json([
             'price' => $price,
-            'formatted_price' => $price ? 'LKR ' . number_format($price, 2) : 'No pricing available'
+            'formatted_price' => 'LKR ' . number_format($price, 2)
         ]);
     }
 }
