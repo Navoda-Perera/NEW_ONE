@@ -74,12 +74,11 @@
                             <table class="table table-hover">
                                 <thead>
                                     <tr>
-                                        <th>Tracking #</th>
                                         <th>Receiver</th>
                                         <th>Service Type</th>
                                         <th>Barcode</th>
+                                        <th>Weight</th>
                                         <th>Amount</th>
-                                        <th>Postage</th>
                                         <th>Status</th>
                                         <th>Created</th>
                                         <th>Actions</th>
@@ -89,19 +88,16 @@
                                     @foreach($items as $item)
                                         <tr>
                                             <td>
-                                                <strong class="text-primary">{{ $item->tracking_number }}</strong>
-                                            </td>
-                                            <td>
                                                 <div>
                                                     <strong>{{ $item->receiver_name }}</strong><br>
-                                                    <small class="text-muted">{{ Str::limit($item->address, 50) }}</small>
+                                                    <small class="text-muted">{{ Str::limit($item->receiver_address, 50) }}</small>
                                                 </div>
                                             </td>
                                             <td>
-                                                <span class="badge bg-info">{{ $item->serviceType->name }}</span>
-                                                @if($item->weight)
-                                                    <br><small class="text-muted">{{ number_format($item->weight) }}g</small>
-                                                @endif
+                                                @php
+                                                    $serviceType = $serviceTypeLabels[$item->temporaryUpload->service_type] ?? $item->temporaryUpload->service_type;
+                                                @endphp
+                                                <span class="badge bg-info">{{ $serviceType }}</span>
                                             </td>
                                             <td>
                                                 @if($item->barcode)
@@ -111,12 +107,21 @@
                                                     <br><small class="text-muted">PM will assign</small>
                                                 @endif
                                             </td>
+                                            <td>
+                                                @if($item->weight)
+                                                    {{ number_format($item->weight) }}g
+                                                @else
+                                                    <span class="text-muted">-</span>
+                                                @endif
+                                            </td>
                                             <td>LKR {{ number_format($item->amount, 2) }}</td>
-                                            <td>LKR {{ number_format($item->postage, 2) }}</td>
                                             <td>
                                                 @switch($item->status)
+                                                    @case('pending')
+                                                        <span class="badge bg-warning">Pending PM Approval</span>
+                                                        @break
                                                     @case('accept')
-                                                        <span class="badge bg-warning">Pending</span>
+                                                        <span class="badge bg-success">Accepted</span>
                                                         @break
                                                     @case('dispatched')
                                                         <span class="badge bg-info">Dispatched</span>

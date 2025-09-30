@@ -68,20 +68,17 @@
 
                         <!-- Service Type Selection -->
                         <div class="mb-3">
-                            <label for="service_type_id" class="form-label fw-semibold">Service Type for All Items</label>
-                            <select id="service_type_id" class="form-select @error('service_type_id') is-invalid @enderror"
-                                    name="service_type_id" required>
+                            <label for="service_type" class="form-label fw-semibold">Service Type for All Items</label>
+                            <select id="service_type" class="form-select @error('service_type') is-invalid @enderror"
+                                    name="service_type" required>
                                 <option value="">Select Service Type</option>
-                                @foreach($serviceTypes as $serviceType)
-                                    <option value="{{ $serviceType->id }}" {{ old('service_type_id') == $serviceType->id ? 'selected' : '' }}>
-                                        {{ $serviceType->name }}
-                                        @if(!$serviceType->has_weight_pricing && $serviceType->base_price)
-                                            - LKR {{ number_format($serviceType->base_price, 2) }}
-                                        @endif
+                                @foreach($serviceTypes as $value => $label)
+                                    <option value="{{ $value }}" {{ old('service_type') == $value ? 'selected' : '' }}>
+                                        {{ $label }}
                                     </option>
                                 @endforeach
                             </select>
-                            @error('service_type_id')
+                            @error('service_type')
                                 <div class="invalid-feedback">{{ $message }}</div>
                             @enderror
                             <div class="form-text">

@@ -19,6 +19,63 @@ Route::get('/', function () {
     return view('welcome');
 });
 
+Route::get('/debug-service-types', function () {
+    $serviceTypes = [
+        'register_post' => [
+            'label' => 'Register Post',
+            'has_weight' => true,
+            'base_price' => 50
+        ],
+        'slp_courier' => [
+            'label' => 'SLP Courier',
+            'has_weight' => true,
+            'base_price' => 100
+        ],
+        'cod' => [
+            'label' => 'COD',
+            'has_weight' => true,
+            'base_price' => 75
+        ],
+        'remittance' => [
+            'label' => 'Remittance',
+            'has_weight' => false,
+            'base_price' => 25
+        ]
+    ];
+    return view('debug-service-types', compact('serviceTypes'));
+});
+
+Route::get('/debug-items', function () {
+    $user = \App\Models\User::where('role', 'customer')->first();
+
+    $query = \App\Models\Item::where('created_by', $user->id);
+    $items = $query->orderBy('created_at', 'desc')->paginate(15);
+
+    $serviceTypeLabels = [
+        'register_post' => 'Register Post',
+        'slp_courier' => 'SLP Courier',
+        'cod' => 'COD',
+        'remittance' => 'Remittance'
+    ];
+
+    $itemBulkData = \App\Models\ItemBulk::where('created_by', $user->id)
+        ->where('category', 'single_item')
+        ->orderBy('created_at', 'desc')
+        ->get()
+        ->keyBy('id');
+
+    return [
+        'user' => $user->name,
+        'items_count' => $items->count(),
+        'bulk_data_count' => $itemBulkData->count(),
+        'service_labels' => $serviceTypeLabels,
+        'first_item' => $items->first() ? [
+            'receiver_name' => $items->first()->receiver_name,
+            'created_at' => $items->first()->created_at
+        ] : null
+    ];
+});
+
 // Admin Routes
 Route::prefix('admin')->name('admin.')->group(function () {
     Route::get('/login', [AdminAuthController::class, 'showLoginForm'])->name('login');
