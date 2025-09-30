@@ -5,10 +5,14 @@ namespace App\Http\Controllers\PM;
 use App\Http\Controllers\Controller;
 use App\Models\User;
 use App\Models\Location;
+use App\Models\Item;
+use App\Models\TemporaryUpload;
+use App\Models\TemporaryUploadAssociate;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Validation\Rules\Password;
 
 class PMDashboardController extends Controller
@@ -22,6 +26,7 @@ class PMDashboardController extends Controller
         $externalCustomers = User::where('user_type', 'external')
                                 ->where('role', 'customer')
                                 ->count();
+        $pendingItemsCount = TemporaryUploadAssociate::where('status', 'pending')->count();
 
         // Debug: Check authentication status
         Log::info('PM Dashboard - Auth check:', [
@@ -44,7 +49,7 @@ class PMDashboardController extends Controller
             Log::warning('PM Dashboard - No authenticated user found');
         }
 
-        return view('pm.dashboard', compact('customerUsers', 'activeCustomers', 'externalCustomers', 'currentUser'));
+        return view('pm.dashboard', compact('customerUsers', 'activeCustomers', 'externalCustomers', 'currentUser', 'pendingItemsCount'));
     }
 
     public function customers()
@@ -155,5 +160,107 @@ class PMDashboardController extends Controller
 
         $status = $user->is_active ? 'activated' : 'deactivated';
         return back()->with('success', "User {$status} successfully!");
+    }
+
+    // PM Items Management
+    public function pendingItems()
+    {
+        $user = Auth::user();
+
+        // Get pending items from the PM's location
+        $pendingItems = TemporaryUploadAssociate::whereHas('temporaryUpload', function($q) use ($user) {
+            $q->where('location_id', $user->location_id);
+        })
+        ->with(['temporaryUpload.user', 'temporaryUpload'])
+        ->where('status', 'pending')
+        ->orderBy('created_at', 'desc')
+        ->paginate(15);
+
+        $serviceTypeLabels = [
+            'register_post' => 'Register Post',
+            'slp_courier' => 'SLP Courier',
+            'cod' => 'COD',
+            'remittance' => 'Remittance'
+        ];
+
+        return view('pm.items.pending', compact('pendingItems', 'serviceTypeLabels'));
+    }
+
+    public function acceptItem(Request $request, $id)
+    {
+        $user = Auth::user();
+
+        $temporaryAssociate = TemporaryUploadAssociate::whereHas('temporaryUpload', function($q) use ($user) {
+            $q->where('location_id', $user->location_id);
+        })
+        ->with('temporaryUpload')
+        ->findOrFail($id);
+
+        if ($temporaryAssociate->status !== 'pending') {
+            return back()->with('error', 'Item is not in pending status.');
+        }
+
+        DB::transaction(function() use ($temporaryAssociate, $request, $user) {
+            // Generate barcode if not provided by customer
+            $barcode = $temporaryAssociate->barcode;
+            if (empty($barcode)) {
+                $barcode = 'ITM-' . str_pad($temporaryAssociate->id, 8, '0', STR_PAD_LEFT);
+            }
+
+            // Create Item record
+            $item = Item::create([
+                'receiver_name' => $temporaryAssociate->receiver_name,
+                'receiver_address' => $temporaryAssociate->receiver_address,
+                'status' => 'accept',
+                'weight' => $temporaryAssociate->weight,
+                'amount' => $temporaryAssociate->amount,
+                'barcode' => $barcode,
+                'created_by' => $temporaryAssociate->temporaryUpload->user_id,
+                'updated_by' => $user->id,
+            ]);
+
+            // Update temporary associate status
+            $temporaryAssociate->update([
+                'status' => 'accept',
+                'barcode' => $barcode
+            ]);
+        });
+
+        $message = 'Item accepted successfully! Barcode: ' . $temporaryAssociate->barcode;
+
+        if ($request->expectsJson()) {
+            return response()->json(['success' => true, 'message' => $message]);
+        }
+
+        return back()->with('success', $message);
+    }
+
+    public function rejectItem(Request $request, $id)
+    {
+        $user = Auth::user();
+
+        $temporaryAssociate = TemporaryUploadAssociate::whereHas('temporaryUpload', function($q) use ($user) {
+            $q->where('location_id', $user->location_id);
+        })->findOrFail($id);
+
+        if ($temporaryAssociate->status !== 'pending') {
+            $message = 'Item is not in pending status.';
+            if ($request->expectsJson()) {
+                return response()->json(['success' => false, 'message' => $message]);
+            }
+            return back()->with('error', $message);
+        }
+
+        $temporaryAssociate->update([
+            'status' => 'rejected'
+        ]);
+
+        $message = 'Item rejected successfully.';
+
+        if ($request->expectsJson()) {
+            return response()->json(['success' => true, 'message' => $message]);
+        }
+
+        return back()->with('success', $message);
     }
 }

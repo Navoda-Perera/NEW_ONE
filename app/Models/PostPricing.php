@@ -24,8 +24,7 @@ class PostPricing extends Model
         'price' => 'decimal:2',
     ];
 
-    // Service type constants
-    const TYPE_NORMAL = 'normal';
+    // Service type constant
     const TYPE_REGISTER = 'register';
 
     /**
@@ -56,27 +55,11 @@ class PostPricing extends Model
     }
 
     /**
-     * Scope for normal post pricing
-     */
-    public function scopeNormal($query)
-    {
-        return $query->where('service_type', self::TYPE_NORMAL);
-    }
-
-    /**
      * Scope for register post pricing
      */
     public function scopeRegister($query)
     {
         return $query->where('service_type', self::TYPE_REGISTER);
-    }
-
-    /**
-     * Scope for normal post pricing (alternative method name)
-     */
-    public function scopeForNormalPost($query)
-    {
-        return $query->where('service_type', self::TYPE_NORMAL);
     }
 
     /**
