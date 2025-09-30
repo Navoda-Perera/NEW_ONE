@@ -120,29 +120,20 @@
                             <i class="bi bi-gear me-2"></i>Service Selection
                         </h5>
                         <div class="mb-3">
-                            <label for="service_type_id" class="form-label fw-semibold">Choose Service Type</label>
-                            <select id="service_type_id" class="form-select @error('service_type_id') is-invalid @enderror"
-                                    name="service_type_id" required>
+                            <label for="service_type" class="form-label fw-semibold">Choose Service Type</label>
+                            <select id="service_type" class="form-select @error('service_type') is-invalid @enderror"
+                                    name="service_type" required>
                                 <option value="">Select Your Service</option>
-                                @foreach($serviceTypes as $serviceType)
-                                    <option value="{{ $serviceType->id }}"
-                                            data-type="{{ $serviceType->name }}"
-                                            data-has-weight="{{ $serviceType->has_weight_pricing ? 'true' : 'false' }}"
-                                            data-base-price="{{ $serviceType->base_price }}">
-                                        {{ $serviceType->name }}
-                                        @if(!$serviceType->has_weight_pricing && $serviceType->base_price)
-                                            - LKR {{ number_format($serviceType->base_price, 2) }}
-                                        @endif
+                                @foreach($serviceTypes as $value => $details)
+                                    <option value="{{ $value }}"
+                                            data-type="{{ $details['label'] }}"
+                                            data-has-weight="{{ $details['has_weight'] ? 'true' : 'false' }}"
+                                            data-base-price="{{ $details['base_price'] }}">
+                                        {{ $details['label'] }}
                                     </option>
                                 @endforeach
-                                <option value="remittance" data-type="Remittance" data-has-weight="false">
-                                    Remittance Service
-                                </option>
-                                <option value="insured" data-type="Insured" data-has-weight="false">
-                                    Insured Service
-                                </option>
                             </select>
-                            @error('service_type_id')
+                            @error('service_type')
                                 <div class="invalid-feedback">{{ $message }}</div>
                             @enderror
                         </div>
@@ -166,13 +157,14 @@
 @push('scripts')
 <script>
 document.addEventListener('DOMContentLoaded', function() {
-    const serviceSelect = document.getElementById('service_type_id');
+    const serviceSelect = document.getElementById('service_type');
     const dynamicFields = document.getElementById('dynamicFields');
 
     // Store locations data for JavaScript use
     const locations = @json($locations);
 
-    serviceSelect.addEventListener('change', function() {
+    if (serviceSelect && dynamicFields) {
+        serviceSelect.addEventListener('change', function() {
         const selectedOption = this.options[this.selectedIndex];
         const serviceType = selectedOption.dataset.type;
         const hasWeight = selectedOption.dataset.hasWeight === 'true';
@@ -228,7 +220,7 @@ document.addEventListener('DOMContentLoaded', function() {
 
         let specificFields = '';
 
-        if (serviceType === 'SLP Courier' || serviceType.includes('COD') || serviceType === 'Normal Post' || serviceType === 'Register Post') {
+        if (serviceType === 'SLP Courier' || serviceType.includes('COD') || serviceType === 'Register Post') {
             specificFields += `
                 <div class="field-group">
                     <h5 class="fw-bold text-primary mb-3">
@@ -486,14 +478,10 @@ document.addEventListener('DOMContentLoaded', function() {
 
         dynamicFields.innerHTML = commonFields + specificFields;
 
-        // Show/hide barcode section based on service type
+        // Show barcode section for all service types (customer can optionally provide barcode)
         const barcodeSection = document.getElementById('barcode-section');
         if (barcodeSection) {
-            if (serviceType === 'SLP Courier' || serviceType.includes('COD')) {
-                barcodeSection.style.display = 'block';
-            } else {
-                barcodeSection.style.display = 'none';
-            }
+            barcodeSection.style.display = 'block';
         }
 
         // Add event listeners for auto-calculations
@@ -640,6 +628,7 @@ document.addEventListener('DOMContentLoaded', function() {
             });
         }
     });
+    }
 });
 </script>
 @endpush

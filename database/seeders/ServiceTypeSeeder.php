@@ -15,14 +15,6 @@ class ServiceTypeSeeder extends Seeder
     {
         $serviceTypes = [
             [
-                'name' => 'Normal Post',
-                'code' => ServiceType::NORMAL_POST,
-                'description' => 'Standard postal service with weight-based pricing',
-                'is_active' => true,
-                'has_weight_pricing' => true,
-                'base_price' => null,
-            ],
-            [
                 'name' => 'Register Post',
                 'code' => ServiceType::REGISTER_POST,
                 'description' => 'Registered postal service with tracking and weight-based pricing',

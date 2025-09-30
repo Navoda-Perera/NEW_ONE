@@ -42,7 +42,6 @@ class ServiceType extends Model
     }
 
     // Constants for service types
-    const NORMAL_POST = 'NORMAL_POST';
     const REGISTER_POST = 'REG_POST';
     const SLP_COURIER = 'SLP_COURIER';
     const COD = 'COD';

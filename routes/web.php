@@ -123,6 +123,11 @@ Route::prefix('pm')->name('pm.')->group(function () {
         // User status toggle
         Route::patch('/users/{user}/toggle-status', [PMDashboardController::class, 'toggleUserStatus'])->name('users.toggle-status');
 
+        // Items management
+        Route::get('/items/pending', [PMDashboardController::class, 'pendingItems'])->name('items.pending');
+        Route::post('/items/{id}/accept', [PMDashboardController::class, 'acceptItem'])->name('items.accept');
+        Route::post('/items/{id}/reject', [PMDashboardController::class, 'rejectItem'])->name('items.reject');
+
         // Company management routes
         Route::resource('companies', CompanyController::class);
 

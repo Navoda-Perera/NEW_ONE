@@ -35,7 +35,7 @@
     </div>
 
     <div class="row">
-        <div class="col-md-6">
+        <div class="col-md-4">
             <div class="card bg-primary text-white">
                 <div class="card-body">
                     <div class="d-flex justify-content-between">
@@ -51,7 +51,7 @@
             </div>
         </div>
 
-        <div class="col-md-6">
+        <div class="col-md-4">
             <div class="card bg-success text-white">
                 <div class="card-body">
                     <div class="d-flex justify-content-between">
@@ -61,6 +61,22 @@
                         </div>
                         <div class="align-self-center">
                             <i class="bi bi-person-check fs-1"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-md-4">
+            <div class="card bg-warning text-white">
+                <div class="card-body">
+                    <div class="d-flex justify-content-between">
+                        <div>
+                            <h4>{{ $pendingItemsCount }}</h4>
+                            <p class="mb-0">Pending Items</p>
+                        </div>
+                        <div class="align-self-center">
+                            <i class="bi bi-clock-history fs-1"></i>
                         </div>
                     </div>
                 </div>
@@ -89,13 +105,24 @@
                             </a>
                         </div>
                         <div class="col-md-3">
-                            <a href="{{ route('pm.postmen.index') }}" class="btn btn-warning btn-lg w-100 mb-3">
+                            <a href="{{ route('pm.items.pending') }}" class="btn btn-warning btn-lg w-100 mb-3">
+                                <i class="bi bi-clock-history"></i><br>
+                                Pending Items
+                                @if($pendingItemsCount > 0)
+                                    <span class="badge bg-danger">{{ $pendingItemsCount }}</span>
+                                @endif
+                            </a>
+                        </div>
+                        <div class="col-md-3">
+                            <a href="{{ route('pm.postmen.index') }}" class="btn btn-info btn-lg w-100 mb-3">
                                 <i class="bi bi-person-badge"></i><br>
                                 View Postmen
                             </a>
                         </div>
+                    </div>
+                    <div class="row">
                         <div class="col-md-3">
-                            <a href="{{ route('pm.postmen.create') }}" class="btn btn-info btn-lg w-100 mb-3">
+                            <a href="{{ route('pm.postmen.create') }}" class="btn btn-secondary btn-lg w-100 mb-3">
                                 <i class="bi bi-person-plus-fill"></i><br>
                                 Create Postman
                             </a>
