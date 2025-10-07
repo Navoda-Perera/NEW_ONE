@@ -10,12 +10,18 @@ class TemporaryUpload extends Model
     use HasFactory;
 
     protected $fillable = [
-        'service_type',
+        'category',
         'location_id',
         'user_id',
     ];
 
-    // Relationships
+    protected $casts = [
+        'category' => 'string',
+        'location_id' => 'integer',
+        'user_id' => 'integer',
+    ];
+
+    // Relationships following Laravel conventions
     public function location()
     {
         return $this->belongsTo(Location::class);
@@ -31,5 +37,40 @@ class TemporaryUpload extends Model
         return $this->hasMany(TemporaryUploadAssociate::class, 'temporary_id');
     }
 
+    public function temporaryUploadAssociates()
+    {
+        return $this->hasMany(TemporaryUploadAssociate::class);
+    }
 
+    // Scopes for role-based access control
+    public function scopeSingleItem($query)
+    {
+        return $query->where('category', 'single_item');
+    }
+
+    public function scopeTemporaryList($query)
+    {
+        return $query->where('category', 'temporary_list');
+    }
+
+    public function scopeForLocation($query, $locationId)
+    {
+        return $query->where('location_id', $locationId);
+    }
+
+    public function scopeForUser($query, $userId)
+    {
+        return $query->where('user_id', $userId);
+    }
+
+    // Accessors
+    public function getCategoryLabelAttribute()
+    {
+        $labels = [
+            'single_item' => 'Single Item',
+            'temporary_list' => 'Temporary List'
+        ];
+
+        return $labels[$this->category] ?? $this->category;
+    }
 }
