@@ -17,6 +17,7 @@ return new class extends Migration
             $table->enum('service_type', ['register_post', 'slp_courier', 'cod', 'remittance'])->default('register_post');
             $table->foreignId('location_id')->constrained('locations')->onDelete('cascade');
             $table->foreignId('created_by')->constrained('users')->onDelete('cascade');
+            // 'single_item' and 'temporary_list' for customer uploads, 'bulk_list' for PM bulk uploads
             $table->enum('category', ['single_item', 'temporary_list', 'bulk_list'])->default('single_item');
             $table->integer('item_quantity')->default(0);
             $table->timestamps();
