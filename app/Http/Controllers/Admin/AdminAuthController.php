@@ -23,32 +23,29 @@ class AdminAuthController extends Controller
             'password' => 'required',
         ]);
 
-        $credentials = $request->only('nic', 'password');
+        // Find user by NIC and role
+        $user = User::where('nic', $request->nic)
+                    ->where('role', 'admin')
+                    ->where('is_active', true)
+                    ->first();
 
-        if (Auth::attempt($credentials)) {
-            /** @var User $user */
-            $user = Auth::user();
-
-            if (!$user->isInternal()) {
-                Auth::logout();
-                return back()->withErrors(['nic' => 'Invalid admin credentials.']);
-            }
-
-            if (!$user->is_active) {
-                Auth::logout();
-                return back()->withErrors(['nic' => 'Your account has been deactivated.']);
-            }
-
-            $request->session()->regenerate();
-
-            if ($user->isAdmin()) {
-                return redirect()->intended(route('admin.dashboard'));
-            } else {
-                return redirect()->intended(route('pm.dashboard'));
-            }
+        if (!$user || !Hash::check($request->password, $user->password)) {
+            return back()->withErrors([
+                'nic' => 'The provided credentials are incorrect.',
+            ]);
         }
 
-        return back()->withErrors(['nic' => 'Invalid credentials.']);
+        // Check if user is internal type
+        if ($user->user_type !== 'internal') {
+            return back()->withErrors([
+                'nic' => 'Access denied. Admin users must be internal users.',
+            ]);
+        }
+
+        Auth::login($user);
+        $request->session()->regenerate();
+
+        return redirect()->intended(route('admin.dashboard'));
     }
 
     public function showRegistrationForm()

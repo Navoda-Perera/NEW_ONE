@@ -23,27 +23,29 @@ class CustomerAuthController extends Controller
             'password' => 'required',
         ]);
 
-        $credentials = $request->only('nic', 'password');
+        // Find user by NIC and role
+        $user = User::where('nic', $request->nic)
+                    ->where('role', 'customer')
+                    ->where('is_active', true)
+                    ->first();
 
-        if (Auth::attempt($credentials)) {
-            /** @var User $user */
-            $user = Auth::user();
-
-            if (!$user->isExternalCustomer()) {
-                Auth::logout();
-                return back()->withErrors(['nic' => 'Invalid customer credentials.']);
-            }
-
-            if (!$user->is_active) {
-                Auth::logout();
-                return back()->withErrors(['nic' => 'Your account has been deactivated.']);
-            }
-
-            $request->session()->regenerate();
-            return redirect()->intended(route('customer.dashboard'));
+        if (!$user || !Hash::check($request->password, $user->password)) {
+            return back()->withErrors([
+                'nic' => 'The provided credentials are incorrect.',
+            ]);
         }
 
-        return back()->withErrors(['nic' => 'Invalid credentials.']);
+        // Check if user is external type
+        if ($user->user_type !== 'external') {
+            return back()->withErrors([
+                'nic' => 'Access denied. Customer users must be external users.',
+            ]);
+        }
+
+        Auth::login($user);
+        $request->session()->regenerate();
+
+        return redirect()->intended(route('customer.dashboard'));
     }
 
     public function showRegistrationForm()

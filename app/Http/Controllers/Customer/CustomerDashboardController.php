@@ -77,11 +77,25 @@ class CustomerDashboardController extends Controller
     {
         /** @var User $user */
         $user = Auth::user();
-        $totalItems = Item::where('created_by', $user->id)->count();
-        $pendingItems = Item::where('created_by', $user->id)->where('status', 'accept')->count();
-        $deliveredItems = Item::where('created_by', $user->id)->where('status', 'delivered')->count();
 
-        return view('customer.services.index', compact('user', 'totalItems', 'pendingItems', 'deliveredItems'));
+        // Get statistics from TemporaryUploadAssociate table which matches the items view
+        $totalItems = TemporaryUploadAssociate::whereHas('temporaryUpload', function($q) use ($user) {
+            $q->where('user_id', $user->id);
+        })->count();
+
+        $pendingItems = TemporaryUploadAssociate::whereHas('temporaryUpload', function($q) use ($user) {
+            $q->where('user_id', $user->id);
+        })->where('status', 'pending')->count();
+
+        $acceptedItems = TemporaryUploadAssociate::whereHas('temporaryUpload', function($q) use ($user) {
+            $q->where('user_id', $user->id);
+        })->where('status', 'accept')->count();
+
+        $rejectedItems = TemporaryUploadAssociate::whereHas('temporaryUpload', function($q) use ($user) {
+            $q->where('user_id', $user->id);
+        })->where('status', 'reject')->count();
+
+        return view('customer.services.index', compact('user', 'totalItems', 'pendingItems', 'acceptedItems', 'rejectedItems'));
     }
 
     public function addSingleItem()
@@ -123,20 +137,27 @@ class CustomerDashboardController extends Controller
 
         // Validation rules for items
         $rules = [
-            'service_type' => 'required|in:register_post,slp_courier,cod,remittance',
             'receiver_name' => 'required|string|max:255',
-            'address' => 'required|string', // Form field name is 'address' but maps to receiver_address in DB
-            'amount' => 'required|numeric|min:0',
-            'weight' => 'required|numeric|min:1|max:40000',
-            'barcode' => 'nullable|string|max:255', // Optional barcode from customer
+            'address' => 'required|string',
+            'weight' => 'required|numeric|min:0',
+            'item_value' => 'required|numeric|min:0',
+            'service_type' => 'required|in:register_post,slp_courier,cod,remittance',
+            'origin_post_office_id' => 'required|exists:locations,id',
         ];
+
+        // Amount is only required for COD and remittance
+        if (in_array($request->service_type, ['cod', 'remittance'])) {
+            $rules['amount'] = 'required|numeric|min:0';
+        } else {
+            $rules['amount'] = 'nullable|numeric|min:0';
+        }
 
         $request->validate($rules);
 
         // Create temporary upload record
         $temporaryUpload = TemporaryUpload::create([
-            'service_type' => $request->service_type,
-            'location_id' => $user->location_id ?? 1,
+            'category' => 'single_item',
+            'location_id' => $request->origin_post_office_id,
             'user_id' => $user->id,
         ]);
 
@@ -150,17 +171,21 @@ class CustomerDashboardController extends Controller
             'receiver_name' => $request->receiver_name,
             'receiver_address' => $request->address,
             'weight' => $request->weight,
-            'amount' => $request->amount,
+            'amount' => $request->amount ?? 0, // Default to 0 if not provided
+            'item_value' => $request->item_value,
             'postage' => $postage,
             'barcode' => $request->barcode, // Optional barcode from customer
             'status' => 'pending', // Status is pending until PM accepts
         ]);
 
+        // Store service type in a way that can be retrieved for display
+        // We'll add it as a custom attribute that we can access in views
+
         // Create item bulk record for tracking service type
         ItemBulk::create([
             'sender_name' => $user->name,
             'service_type' => $request->service_type,
-            'location_id' => $user->location_id ?? 1,
+            'location_id' => $request->origin_post_office_id,
             'created_by' => $user->id,
             'category' => 'single_item',
             'item_quantity' => 1,
@@ -208,6 +233,7 @@ class CustomerDashboardController extends Controller
     {
         /** @var User $user */
         $user = Auth::user();
+        $locations = Location::active()->get();
 
         // For bulk upload, we just need simple key-value pairs
         $serviceTypes = [
@@ -217,13 +243,13 @@ class CustomerDashboardController extends Controller
             'remittance' => 'Remittance'
         ];
 
-        return view('customer.services.bulk-upload', compact('user', 'serviceTypes'));
+        return view('customer.services.bulk-upload', compact('user', 'locations', 'serviceTypes'));
     }
 
     public function storeBulkUpload(Request $request)
     {
         $request->validate([
-            'service_type' => 'required|in:register_post,slp_courier,cod,remittance',
+            'origin_post_office_id' => 'required|exists:locations,id',
             'bulk_file' => 'required|file|mimes:csv,xlsx,xls|max:2048',
         ]);
 
@@ -235,12 +261,38 @@ class CustomerDashboardController extends Controller
         $filename = time() . '_' . $file->getClientOriginalName();
         $file->storeAs('bulk_uploads', $filename, 'public');
 
-        // Create temporary upload record
+        // Create temporary upload record (customer bulk uploads always use 'temporary_list' category)
         $temporaryUpload = TemporaryUpload::create([
-            'service_type' => $request->service_type,
-            'location_id' => $user->location_id ?? 1,
+            'category' => 'temporary_list',
+            'location_id' => $request->origin_post_office_id,
             'user_id' => $user->id,
         ]);
+
+        // Parse CSV and store each item with its own service_type
+        $csvPath = $file->getPathname();
+        $items = [];
+        if (($handle = fopen($csvPath, 'r')) !== false) {
+            $header = fgetcsv($handle);
+            while (($row = fgetcsv($handle)) !== false) {
+                $item = array_combine($header, $row);
+                // Only allow valid service_type values
+                if (!in_array($item['service_type'], ['register_post', 'slp_courier', 'cod', 'remittance'])) {
+                    $item['service_type'] = 'register_post';
+                }
+                TemporaryUploadAssociate::create([
+                    'temporary_id' => $temporaryUpload->id,
+                    'receiver_name' => $item['receiver_name'] ?? '',
+                    'receiver_address' => $item['receiver_address'] ?? '',
+                    'item_value' => $item['item_value'] ?? 0,
+                    'service_type' => $item['service_type'],
+                    'weight' => $item['weight'] ?? 0,
+                    'amount' => $item['amount'] ?? 0,
+                    'notes' => $item['notes'] ?? '',
+                    'status' => 'pending',
+                ]);
+            }
+            fclose($handle);
+        }
 
         return redirect()->route('customer.services.bulk-status', $temporaryUpload->id)
             ->with('success', 'File uploaded successfully! Processing will begin shortly.');
@@ -305,18 +357,88 @@ class CustomerDashboardController extends Controller
     public function getPostalPrice(Request $request)
     {
         $weight = $request->input('weight');
+        $serviceType = $request->input('service_type');
 
-        Log::info('Postal pricing request received', ['weight' => $weight]);
+        Log::info('Postal pricing request received', ['weight' => $weight, 'service_type' => $serviceType]);
 
-        // Basic pricing calculation (could be customized as needed)
-        $price = $weight * 10; // 10 LKR per gram as basic pricing
+        // Convert service type to proper format
+        $normalizedServiceType = 'register_post'; // Default to register post
+        if ($serviceType === 'Register Post') {
+            $normalizedServiceType = 'register_post';
+        } elseif ($serviceType === 'Normal Post') {
+            $normalizedServiceType = 'register_post'; // Since we removed normal post, use register post
+        }
 
-        Log::info('Calculated postal price', ['weight' => $weight, 'price' => $price]);
+        // Use proper pricing calculation
+        $price = $this->calculatePostage($normalizedServiceType, $weight, 0);
+
+        Log::info('Calculated postal price', ['weight' => $weight, 'service_type' => $serviceType, 'normalized' => $normalizedServiceType, 'price' => $price]);
 
         return response()->json([
             'price' => $price,
             'formatted_price' => 'LKR ' . number_format($price, 2)
         ]);
+    }
+
+    public function updateBulkItem(Request $request, $id)
+    {
+        $request->validate([
+            'receiver_name' => 'required|string|max:255',
+            'receiver_address' => 'required|string',
+            'item_value' => 'required|numeric|min:0',
+            'service_type' => 'required|in:register_post,slp_courier,cod,remittance',
+            'weight' => 'required|numeric|min:0',
+            'amount' => 'nullable|numeric|min:0',
+        ]);
+
+        /** @var User $user */
+        $user = Auth::user();
+
+        $associate = TemporaryUploadAssociate::whereHas('temporaryUpload', function($q) use ($user) {
+            $q->where('user_id', $user->id);
+        })->findOrFail($id);
+
+        $associate->update([
+            'receiver_name' => $request->receiver_name,
+            'receiver_address' => $request->receiver_address,
+            'item_value' => $request->item_value,
+            'service_type' => $request->service_type,
+            'weight' => $request->weight,
+            'amount' => $request->amount ?? 0,
+        ]);
+
+        return response()->json(['success' => true, 'message' => 'Item updated successfully']);
+    }
+
+    public function deleteBulkItem($id)
+    {
+        /** @var User $user */
+        $user = Auth::user();
+
+        $associate = TemporaryUploadAssociate::whereHas('temporaryUpload', function($q) use ($user) {
+            $q->where('user_id', $user->id);
+        })->findOrFail($id);
+
+        $associate->delete();
+
+        return response()->json(['success' => true, 'message' => 'Item deleted successfully']);
+    }
+
+    public function submitBulkToPM($id)
+    {
+        /** @var User $user */
+        $user = Auth::user();
+
+        $temporaryUpload = TemporaryUpload::where('user_id', $user->id)->findOrFail($id);
+
+        // Update status to submitted so PM can see it
+        $temporaryUpload->update(['status' => 'submitted']);
+
+        // Update all associates to pending for PM review
+        $temporaryUpload->associates()->update(['status' => 'pending']);
+
+        return redirect()->route('customer.services.items')
+            ->with('success', 'Items submitted to PM for review successfully!');
     }
 
     private function calculatePostage($serviceType, $weight, $amount)
