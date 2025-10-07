@@ -68,8 +68,8 @@
                 <div class="card-body">
                     <div class="d-flex justify-content-between">
                         <div>
-                            <h6 class="card-title">Delivered</h6>
-                            <h3 class="mb-0">{{ $deliveredItems }}</h3>
+                            <h6 class="card-title">Accepted</h6>
+                            <h3 class="mb-0">{{ $acceptedItems }}</h3>
                         </div>
                         <div class="align-self-center">
                             <i class="bi bi-check-circle fs-1"></i>
@@ -79,15 +79,15 @@
             </div>
         </div>
         <div class="col-md-3">
-            <div class="card bg-info text-white">
+            <div class="card bg-danger text-white">
                 <div class="card-body">
                     <div class="d-flex justify-content-between">
                         <div>
-                            <h6 class="card-title">In Transit</h6>
-                            <h3 class="mb-0">{{ $totalItems - $deliveredItems - $pendingItems }}</h3>
+                            <h6 class="card-title">Rejected</h6>
+                            <h3 class="mb-0">{{ $rejectedItems }}</h3>
                         </div>
                         <div class="align-self-center">
-                            <i class="bi bi-truck fs-1"></i>
+                            <i class="bi bi-x-circle fs-1"></i>
                         </div>
                     </div>
                 </div>
@@ -102,7 +102,7 @@
                 <div class="card-body text-center">
                     <i class="bi bi-plus-circle fs-1 text-success mb-3"></i>
                     <h5 class="card-title">Add Single Item</h5>
-                    <p class="card-text">Add individual items with specific service types like Register Post, SLP Courier, COD, or Remittance.</p>
+                    <p class="card-text">Add individual items (<span class="fw-bold">single_item</span> category) with specific service types like Register Post, SLP Courier, COD, or Remittance.</p>
                     <a href="{{ route('customer.services.add-single-item') }}" class="btn btn-success">
                         <i class="bi bi-plus-circle me-2"></i>Add Single Item
                     </a>
@@ -114,7 +114,7 @@
                 <div class="card-body text-center">
                     <i class="bi bi-cloud-upload fs-1 text-primary mb-3"></i>
                     <h5 class="card-title">Bulk Upload</h5>
-                    <p class="card-text">Upload multiple items at once using CSV or Excel files for efficient bulk processing.</p>
+                    <p class="card-text">Upload multiple items at once using CSV or Excel files (<span class="fw-bold">temporary_list</span> category) for efficient bulk processing.</p>
                     <a href="{{ route('customer.services.bulk-upload') }}" class="btn btn-primary">
                         <i class="bi bi-cloud-upload me-2"></i>Bulk Upload
                     </a>
@@ -138,13 +138,18 @@
                             </a>
                         </div>
                         <div class="col-md-3">
-                            <a href="{{ route('customer.services.items') }}?status=accept" class="btn btn-outline-warning w-100 mb-2">
+                            <a href="{{ route('customer.services.items') }}?status=pending" class="btn btn-outline-warning w-100 mb-2">
                                 <i class="bi bi-clock me-2"></i>Pending Items
                             </a>
                         </div>
                         <div class="col-md-3">
-                            <a href="{{ route('customer.services.items') }}?status=delivered" class="btn btn-outline-success w-100 mb-2">
-                                <i class="bi bi-check-circle me-2"></i>Delivered Items
+                            <a href="{{ route('customer.services.items') }}?status=accept" class="btn btn-outline-success w-100 mb-2">
+                                <i class="bi bi-check-circle me-2"></i>Accepted Items
+                            </a>
+                        </div>
+                        <div class="col-md-3">
+                            <a href="{{ route('customer.services.items') }}?status=reject" class="btn btn-outline-danger w-100 mb-2">
+                                <i class="bi bi-x-circle me-2"></i>Rejected Items
                             </a>
                         </div>
                         <div class="col-md-3">

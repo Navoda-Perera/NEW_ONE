@@ -28,7 +28,7 @@
                 <a href="{{ route('customer.services.index') }}" class="btn btn-outline-secondary me-3">
                     <i class="bi bi-arrow-left"></i>
                 </a>
-                <h2 class="fw-bold text-dark mb-0">Bulk Upload</h2>
+                <h2 class="fw-bold text-dark mb-0">Bulk Upload <span class="badge bg-info">temporary_list</span></h2>
             </div>
 
             <!-- Instructions Card -->
@@ -66,23 +66,30 @@
                           enctype="multipart/form-data">
                         @csrf
 
-                        <!-- Service Type Selection -->
+                        <!-- Origin Post Office Selection -->
                         <div class="mb-3">
-                            <label for="service_type" class="form-label fw-semibold">Service Type for All Items</label>
-                            <select id="service_type" class="form-select @error('service_type') is-invalid @enderror"
-                                    name="service_type" required>
-                                <option value="">Select Service Type</option>
-                                @foreach($serviceTypes as $value => $label)
-                                    <option value="{{ $value }}" {{ old('service_type') == $value ? 'selected' : '' }}>
-                                        {{ $label }}
+                            <label for="origin_post_office_id" class="form-label fw-semibold">
+                                <i class="bi bi-building me-1"></i>Origin Post Office
+                            </label>
+                            <select id="origin_post_office_id" class="form-select @error('origin_post_office_id') is-invalid @enderror"
+                                    name="origin_post_office_id" required>
+                                <option value="">Select Origin Post Office</option>
+                                @foreach($locations as $location)
+                                    <option value="{{ $location->id }}" {{ old('origin_post_office_id') == $location->id ? 'selected' : '' }}>
+                                        {{ $location->name }} ({{ $location->code }})
                                     </option>
                                 @endforeach
                             </select>
-                            @error('service_type')
+                            @error('origin_post_office_id')
                                 <div class="invalid-feedback">{{ $message }}</div>
                             @enderror
-                            <div class="form-text">
-                                <small class="text-muted">All items in the uploaded file will use this service type</small>
+                        </div>
+
+
+                        <!-- Service Type Instructions -->
+                        <div class="mb-4">
+                            <div class="alert alert-info">
+                                <strong>New!</strong> You can now specify the <code>service_type</code> for each item in your CSV file. Supported values: <code>register_post</code>, <code>slp_courier</code>, <code>cod</code>, <code>remittance</code>.
                             </div>
                         </div>
 
@@ -109,13 +116,14 @@
                                             <ul class="list-unstyled">
                                                 <li><strong>receiver_name</strong> - Receiver's full name</li>
                                                 <li><strong>receiver_address</strong> - Complete address</li>
-                                                <li><strong>amount</strong> - Item value in LKR</li>
+                                                <li><strong>item_value</strong> - Declared item value in LKR</li>
+                                                <li><strong>service_type</strong> - <span class="text-primary">Service type for this item</span></li>
                                             </ul>
                                         </div>
                                         <div class="col-md-6">
                                             <ul class="list-unstyled">
-                                                <li><strong>weight</strong> - Weight in grams (for SLP Courier)</li>
-                                                <li><strong>item_value</strong> - Declared value (optional)</li>
+                                                <li><strong>weight</strong> - Weight in grams</li>
+                                                <li><strong>amount</strong> - Collection amount (COD only)</li>
                                                 <li><strong>notes</strong> - Additional notes (optional)</li>
                                             </ul>
                                         </div>
@@ -147,9 +155,10 @@
                                 <tr>
                                     <th>receiver_name</th>
                                     <th>receiver_address</th>
-                                    <th>amount</th>
-                                    <th>weight</th>
                                     <th>item_value</th>
+                                    <th>service_type</th>
+                                    <th>weight</th>
+                                    <th>amount</th>
                                     <th>notes</th>
                                 </tr>
                             </thead>
@@ -158,17 +167,19 @@
                                     <td>John Doe</td>
                                     <td>123 Main St, Colombo 07</td>
                                     <td>1500.00</td>
+                                    <td>register_post</td>
                                     <td>250</td>
-                                    <td>1500.00</td>
+                                    <td></td>
                                     <td>Handle with care</td>
                                 </tr>
                                 <tr>
                                     <td>Jane Smith</td>
                                     <td>456 Galle Road, Dehiwala</td>
                                     <td>2500.00</td>
+                                    <td>cod</td>
                                     <td>500</td>
                                     <td>2500.00</td>
-                                    <td>Fragile item</td>
+                                    <td>COD - Fragile item</td>
                                 </tr>
                             </tbody>
                         </table>
@@ -182,9 +193,7 @@
 <script>
 function downloadTemplate() {
     // Create CSV content
-    const csvContent = `receiver_name,receiver_address,amount,weight,item_value,notes
-John Doe,"123 Main St, Colombo 07",1500.00,250,1500.00,Handle with care
-Jane Smith,"456 Galle Road, Dehiwala",2500.00,500,2500.00,Fragile item`;
+    const csvContent = `receiver_name,receiver_address,item_value,service_type,weight,amount,notes\nJohn Doe,"123 Main St, Colombo 07",1500.00,register_post,250,,Handle with care\nJane Smith,"456 Galle Road, Dehiwala",2500.00,cod,500,2500.00,COD - Fragile item`;
 
     // Create download link
     const blob = new Blob([csvContent], { type: 'text/csv' });

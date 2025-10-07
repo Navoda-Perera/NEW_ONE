@@ -1,6 +1,6 @@
 @extends('layouts.app')
 
-@section('title', 'Pending Items - PM Dashboard')
+@section('title', 'Pending Items')
 
 @section('nav-links')
     <li class="nav-item">
@@ -80,7 +80,7 @@
                                             </td>
                                             <td>
                                                 @php
-                                                    $serviceType = $serviceTypeLabels[$item->temporaryUpload->service_type] ?? $item->temporaryUpload->service_type;
+                                                    $serviceType = $serviceTypeLabels[$item->service_type] ?? $item->service_type;
                                                 @endphp
                                                 <span class="badge bg-info">{{ $serviceType }}</span>
                                             </td>
@@ -112,15 +112,15 @@
                                             </td>
                                             <td>
                                                 <div class="btn-group-vertical" role="group">
-                                                    <button class="btn btn-success btn-sm mb-1"
-                                                            onclick="acceptItem({{ $item->id }})"
-                                                            title="Accept Item">
-                                                        <i class="bi bi-check-circle"></i> Accept
-                                                    </button>
-                                                    <button class="btn btn-danger btn-sm"
-                                                            onclick="rejectItem({{ $item->id }})"
-                                                            title="Reject Item">
-                                                        <i class="bi bi-x-circle"></i> Reject
+                                                    <a href="{{ route('pm.items.edit', $item->id) }}"
+                                                       class="btn btn-primary btn-sm mb-1"
+                                                       title="Review & Edit Item Details">
+                                                        <i class="bi bi-pencil-square"></i> Review & Edit
+                                                    </a>
+                                                    <button class="btn btn-outline-danger btn-sm"
+                                                            onclick="quickRejectItem({{ $item->id }})"
+                                                            title="Quick Reject">
+                                                        <i class="bi bi-x-circle"></i> Quick Reject
                                                     </button>
                                                 </div>
                                             </td>
@@ -149,9 +149,9 @@
 
 <!-- JavaScript for Actions -->
 <script>
-function acceptItem(itemId) {
-    if (confirm('Are you sure you want to accept this item? This will assign a barcode and move it to the tracking system.')) {
-        fetch(`/pm/items/${itemId}/accept`, {
+function quickRejectItem(itemId) {
+    if (confirm('Are you sure you want to reject this item? The customer will be notified.')) {
+        fetch(`/pm/items/${itemId}/reject`, {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json',
@@ -163,15 +163,15 @@ function acceptItem(itemId) {
             if (data.success) {
                 // Remove the row or update status
                 document.getElementById(`item-${itemId}`).style.opacity = '0.5';
-                document.getElementById(`item-${itemId}`).innerHTML = '<td colspan="9" class="text-center text-success"><i class="bi bi-check-circle"></i> Item Accepted Successfully</td>';
+                document.getElementById(`item-${itemId}`).innerHTML = '<td colspan="9" class="text-center text-danger"><i class="bi bi-x-circle"></i> Item Rejected</td>';
 
                 // Show success message
-                showAlert('success', data.message || 'Item accepted successfully!');
+                showAlert('success', data.message || 'Item rejected successfully!');
 
                 // Reload page after 2 seconds
                 setTimeout(() => location.reload(), 2000);
             } else {
-                showAlert('danger', data.message || 'Error accepting item');
+                showAlert('danger', data.message || 'Error rejecting item');
             }
         })
         .catch(error => {

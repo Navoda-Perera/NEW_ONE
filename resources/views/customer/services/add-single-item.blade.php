@@ -119,6 +119,26 @@
                         <h5 class="fw-bold text-primary mb-3">
                             <i class="bi bi-gear me-2"></i>Service Selection
                         </h5>
+
+                        <!-- Origin Post Office Selection -->
+                        <div class="mb-3">
+                            <label for="origin_post_office_id" class="form-label fw-semibold">
+                                <i class="bi bi-building me-1"></i>Origin Post Office
+                            </label>
+                            <select id="origin_post_office_id" class="form-select @error('origin_post_office_id') is-invalid @enderror"
+                                    name="origin_post_office_id" required>
+                                <option value="">Select Origin Post Office</option>
+                                @foreach($locations as $location)
+                                    <option value="{{ $location->id }}" {{ old('origin_post_office_id') == $location->id ? 'selected' : '' }}>
+                                        {{ $location->name }} ({{ $location->code }})
+                                    </option>
+                                @endforeach
+                            </select>
+                            @error('origin_post_office_id')
+                                <div class="invalid-feedback">{{ $message }}</div>
+                            @enderror
+                        </div>
+
                         <div class="mb-3">
                             <label for="service_type" class="form-label fw-semibold">Choose Service Type</label>
                             <select id="service_type" class="form-select @error('service_type') is-invalid @enderror"
@@ -189,14 +209,30 @@ document.addEventListener('DOMContentLoaded', function() {
                                placeholder="Enter receiver's full name" required>
                     </div>
                     <div class="col-md-6">
+                        <label for="item_value" class="form-label fw-semibold">
+                            <i class="bi bi-gem me-1"></i>Item Value (LKR)
+                        </label>
+                        <input id="item_value" type="number" step="0.01" min="0" class="form-control"
+                               name="item_value" placeholder="0.00" required>
+                        <div class="form-text">
+                            <i class="bi bi-info-circle me-1"></i>Declared value of the item for insurance purposes
+                        </div>
+                    </div>
+                </div>
+                ${(serviceType === 'COD' || serviceType === 'Remittance') ? `
+                <div class="row mb-3" id="amount-section">
+                    <div class="col-md-6">
                         <label for="amount" class="form-label fw-semibold">
-                            <i class="bi bi-currency-dollar me-1"></i>Amount (LKR)
+                            <i class="bi bi-currency-dollar me-1"></i>Collection Amount (LKR)
                         </label>
                         <input id="amount" type="number" step="0.01" min="0" class="form-control"
                                name="amount" placeholder="0.00" required>
+                        <div class="form-text">
+                            <i class="bi bi-info-circle me-1"></i>Amount to collect from receiver
+                        </div>
                     </div>
-                </div>
-                <div class="row mb-3" id="barcode-section" style="display: none;">
+                </div>` : ''}
+                <div class="row mb-3">
                     <div class="col-md-6">
                         <label for="barcode" class="form-label fw-semibold">
                             <i class="bi bi-upc-scan me-1"></i>Barcode (Optional)
@@ -477,12 +513,6 @@ document.addEventListener('DOMContentLoaded', function() {
         }
 
         dynamicFields.innerHTML = commonFields + specificFields;
-
-        // Show barcode section for all service types (customer can optionally provide barcode)
-        const barcodeSection = document.getElementById('barcode-section');
-        if (barcodeSection) {
-            barcodeSection.style.display = 'block';
-        }
 
         // Add event listeners for auto-calculations
         const amountField = document.getElementById('amount');

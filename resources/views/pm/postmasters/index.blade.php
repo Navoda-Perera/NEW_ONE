@@ -1,6 +1,6 @@
 @extends('layouts.app')
 
-@section('title', 'Manage Postmasters')
+@section('title', 'Postmasters')
 
 @section('nav-links')
     <li class="nav-item">

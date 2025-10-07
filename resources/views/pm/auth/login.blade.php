@@ -67,7 +67,7 @@
                             </div>
                         @endif
 
-                        <form method="POST" action="{{ route('pm.login') }}">
+                        <form method="POST" action="{{ route('pm.login.post') }}">
                             @csrf
                             <div class="form-floating mb-3">
                                 <input

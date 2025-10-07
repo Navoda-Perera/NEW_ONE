@@ -48,17 +48,17 @@
                    class="btn {{ !request('status') ? 'btn-primary' : 'btn-outline-primary' }}">
                     All Items
                 </a>
-                <a href="{{ route('customer.services.items', ['status' => 'accept']) }}"
-                   class="btn {{ request('status') === 'accept' ? 'btn-warning' : 'btn-outline-warning' }}">
+                <a href="{{ route('customer.services.items', ['status' => 'pending']) }}"
+                   class="btn {{ request('status') === 'pending' ? 'btn-warning' : 'btn-outline-warning' }}">
                     Pending
                 </a>
-                <a href="{{ route('customer.services.items', ['status' => 'dispatched']) }}"
-                   class="btn {{ request('status') === 'dispatched' ? 'btn-info' : 'btn-outline-info' }}">
-                    Dispatched
+                <a href="{{ route('customer.services.items', ['status' => 'accept']) }}"
+                   class="btn {{ request('status') === 'accept' ? 'btn-success' : 'btn-outline-success' }}">
+                    Accepted
                 </a>
-                <a href="{{ route('customer.services.items', ['status' => 'delivered']) }}"
-                   class="btn {{ request('status') === 'delivered' ? 'btn-success' : 'btn-outline-success' }}">
-                    Delivered
+                <a href="{{ route('customer.services.items', ['status' => 'reject']) }}"
+                   class="btn {{ request('status') === 'reject' ? 'btn-danger' : 'btn-outline-danger' }}">
+                    Rejected
                 </a>
             </div>
         </div>
@@ -95,7 +95,7 @@
                                             </td>
                                             <td>
                                                 @php
-                                                    $serviceType = $serviceTypeLabels[$item->temporaryUpload->service_type] ?? $item->temporaryUpload->service_type;
+                                                    $serviceType = $serviceTypeLabels[$item->service_type] ?? $item->service_type;
                                                 @endphp
                                                 <span class="badge bg-info">{{ $serviceType }}</span>
                                             </td>
@@ -123,17 +123,8 @@
                                                     @case('accept')
                                                         <span class="badge bg-success">Accepted</span>
                                                         @break
-                                                    @case('dispatched')
-                                                        <span class="badge bg-info">Dispatched</span>
-                                                        @break
-                                                    @case('delivered')
-                                                        <span class="badge bg-success">Delivered</span>
-                                                        @break
-                                                    @case('paid')
-                                                        <span class="badge bg-primary">Paid</span>
-                                                        @break
-                                                    @case('returned')
-                                                        <span class="badge bg-danger">Returned</span>
+                                                    @case('reject')
+                                                        <span class="badge bg-danger">Rejected</span>
                                                         @break
                                                     @default
                                                         <span class="badge bg-secondary">{{ ucfirst($item->status) }}</span>

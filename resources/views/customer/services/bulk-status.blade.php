@@ -129,10 +129,12 @@
                                         <th>#</th>
                                         <th>Receiver</th>
                                         <th>Address</th>
+                                        <th>Service Type</th>
                                         <th>Amount</th>
                                         <th>Weight</th>
                                         <th>Postage</th>
                                         <th>Status</th>
+                                        <th>Actions</th>
                                     </tr>
                                 </thead>
                                 <tbody>
@@ -141,6 +143,17 @@
                                             <td>{{ $index + 1 }}</td>
                                             <td>{{ $associate->receiver_name }}</td>
                                             <td>{{ Str::limit($associate->receiver_address, 50) }}</td>
+                                            <td>
+                                                @php
+                                                    $typeLabels = [
+                                                        'register_post' => 'Register Post',
+                                                        'slp_courier' => 'SLP Courier',
+                                                        'cod' => 'COD',
+                                                        'remittance' => 'Remittance'
+                                                    ];
+                                                @endphp
+                                                <span class="badge bg-primary">{{ $typeLabels[$associate->service_type] ?? $associate->service_type }}</span>
+                                            </td>
                                             <td>LKR {{ number_format($associate->amount, 2) }}</td>
                                             <td>
                                                 @if($associate->weight)
@@ -162,6 +175,14 @@
                                                         <span class="badge bg-danger">Rejected</span>
                                                         @break
                                                 @endswitch
+                                            </td>
+                                            <td>
+                                                <button class="btn btn-sm btn-outline-primary" onclick="editItem({{ $associate->id }}, '{{ $associate->receiver_name }}', '{{ $associate->receiver_address }}', '{{ $associate->item_value }}', '{{ $associate->service_type }}', '{{ $associate->weight }}', '{{ $associate->amount }}')" data-bs-toggle="modal" data-bs-target="#editItemModal">
+                                                    <i class="bi bi-pencil"></i>
+                                                </button>
+                                                <button class="btn btn-sm btn-outline-danger" onclick="deleteItem({{ $associate->id }})">
+                                                    <i class="bi bi-trash"></i>
+                                                </button>
                                             </td>
                                         </tr>
                                     @endforeach
@@ -200,6 +221,14 @@
             <!-- Actions -->
             <div class="row mt-4">
                 <div class="col-md-12 text-center">
+                    @if($temporaryUpload->associates && $temporaryUpload->associates->count() > 0 && $temporaryUpload->status !== 'submitted')
+                        <form method="POST" action="{{ route('customer.services.submit-bulk-to-pm', $temporaryUpload->id) }}" style="display: inline-block;">
+                            @csrf
+                            <button type="submit" class="btn btn-success me-2" onclick="return confirm('Are you sure you want to submit these items to PM for review?')">
+                                <i class="bi bi-send me-2"></i>Submit to PM
+                            </button>
+                        </form>
+                    @endif
                     <a href="{{ route('customer.services.bulk-upload') }}" class="btn btn-primary">
                         <i class="bi bi-cloud-upload me-2"></i>Upload Another File
                     </a>
@@ -217,6 +246,69 @@
     </div>
 </div>
 
+<!-- Edit Item Modal -->
+<div class="modal fade" id="editItemModal" tabindex="-1" aria-labelledby="editItemModalLabel" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="editItemModalLabel">Edit Item</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <form id="editItemForm">
+                @csrf
+                @method('PUT')
+                <div class="modal-body">
+                    <div class="mb-3">
+                        <label for="edit_receiver_name" class="form-label">Receiver Name</label>
+                        <input type="text" class="form-control" id="edit_receiver_name" name="receiver_name" required>
+                    </div>
+                    <div class="mb-3">
+                        <label for="edit_receiver_address" class="form-label">Receiver Address</label>
+                        <textarea class="form-control" id="edit_receiver_address" name="receiver_address" rows="3" required></textarea>
+                    </div>
+                    <div class="row">
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <label for="edit_item_value" class="form-label">Item Value (LKR)</label>
+                                <input type="number" step="0.01" class="form-control" id="edit_item_value" name="item_value" required>
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <label for="edit_service_type" class="form-label">Service Type</label>
+                                <select class="form-select" id="edit_service_type" name="service_type" required>
+                                    <option value="register_post">Register Post</option>
+                                    <option value="slp_courier">SLP Courier</option>
+                                    <option value="cod">COD</option>
+                                    <option value="remittance">Remittance</option>
+                                </select>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="row">
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <label for="edit_weight" class="form-label">Weight (g)</label>
+                                <input type="number" step="0.01" class="form-control" id="edit_weight" name="weight" required>
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <label for="edit_amount" class="form-label">Amount (LKR)</label>
+                                <input type="number" step="0.01" class="form-control" id="edit_amount" name="amount">
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                    <button type="submit" class="btn btn-primary">Update Item</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
 @if($temporaryUpload->status === 'processing')
 <script>
 // Auto-refresh page every 30 seconds if still processing
@@ -225,4 +317,69 @@ setTimeout(function() {
 }, 30000);
 </script>
 @endif
+
+<script>
+let currentEditId = null;
+
+function editItem(id, receiverName, receiverAddress, itemValue, serviceType, weight, amount) {
+    currentEditId = id;
+    document.getElementById('edit_receiver_name').value = receiverName;
+    document.getElementById('edit_receiver_address').value = receiverAddress;
+    document.getElementById('edit_item_value').value = itemValue;
+    document.getElementById('edit_service_type').value = serviceType;
+    document.getElementById('edit_weight').value = weight;
+    document.getElementById('edit_amount').value = amount;
+}
+
+function deleteItem(id) {
+    if (confirm('Are you sure you want to delete this item?')) {
+        fetch(`{{ route('customer.services.delete-bulk-item', ':id') }}`.replace(':id', id), {
+            method: 'DELETE',
+            headers: {
+                'X-CSRF-TOKEN': '{{ csrf_token() }}',
+                'Content-Type': 'application/json',
+            },
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                location.reload();
+            } else {
+                alert('Error deleting item');
+            }
+        })
+        .catch(error => {
+            console.error('Error:', error);
+            alert('Error deleting item');
+        });
+    }
+}
+
+document.getElementById('editItemForm').addEventListener('submit', function(e) {
+    e.preventDefault();
+
+    const formData = new FormData(this);
+
+    fetch(`{{ route('customer.services.update-bulk-item', ':id') }}`.replace(':id', currentEditId), {
+        method: 'POST',
+        headers: {
+            'X-CSRF-TOKEN': '{{ csrf_token() }}',
+            'X-HTTP-Method-Override': 'PUT'
+        },
+        body: formData
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            location.reload();
+        } else {
+            alert('Error updating item');
+        }
+    })
+    .catch(error => {
+        console.error('Error:', error);
+        alert('Error updating item');
+    });
+});
+</script>
 @endsection

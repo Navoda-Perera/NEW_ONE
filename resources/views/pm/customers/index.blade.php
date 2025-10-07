@@ -1,6 +1,6 @@
 @extends('layouts.app')
 
-@section('title', 'Manage Customers')
+@section('title', 'Customers')
 
 @section('nav-links')
     <li class="nav-item">

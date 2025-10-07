@@ -27,7 +27,7 @@
     <div class="card bg-light border-primary" style="min-width: 300px;">
         <div class="card-body p-3">
             <h6 class="card-title mb-2">
-                <i class="bi bi-geo-alt-fill text-primary"></i> Assigned Post Office
+                <i class="bi bi-geo-alt-fill text-primary"></i>
             </h6>
             <div class="text-dark">
                 <strong>{{ $user->location->name }}</strong>

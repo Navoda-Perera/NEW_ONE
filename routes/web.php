@@ -7,6 +7,7 @@ use App\Http\Controllers\Customer\CustomerAuthController;
 use App\Http\Controllers\Customer\CustomerDashboardController;
 use App\Http\Controllers\PM\PMAuthController;
 use App\Http\Controllers\PM\PMDashboardController;
+use App\Http\Controllers\PM\PMItemController;
 use App\Http\Controllers\CompanyController;
 use App\Http\Controllers\PostmanController;
 // use App\Http\Controllers\DeliveryController; // Temporarily commented out
@@ -19,72 +20,30 @@ Route::get('/', function () {
     return view('welcome');
 });
 
-Route::get('/debug-service-types', function () {
-    $serviceTypes = [
-        'register_post' => [
-            'label' => 'Register Post',
-            'has_weight' => true,
-            'base_price' => 50
-        ],
-        'slp_courier' => [
-            'label' => 'SLP Courier',
-            'has_weight' => true,
-            'base_price' => 100
-        ],
-        'cod' => [
-            'label' => 'COD',
-            'has_weight' => true,
-            'base_price' => 75
-        ],
-        'remittance' => [
-            'label' => 'Remittance',
-            'has_weight' => false,
-            'base_price' => 25
-        ]
-    ];
-    return view('debug-service-types', compact('serviceTypes'));
+// Default login route for Laravel auth middleware
+Route::get('/login', function () {
+    return redirect('/admin/login');
+})->name('login');
+
+// PM specific login redirect
+Route::get('/pm', function () {
+    return redirect('/pm/login');
 });
 
-Route::get('/debug-items', function () {
-    $user = \App\Models\User::where('role', 'customer')->first();
-
-    $query = \App\Models\Item::where('created_by', $user->id);
-    $items = $query->orderBy('created_at', 'desc')->paginate(15);
-
-    $serviceTypeLabels = [
-        'register_post' => 'Register Post',
-        'slp_courier' => 'SLP Courier',
-        'cod' => 'COD',
-        'remittance' => 'Remittance'
-    ];
-
-    $itemBulkData = \App\Models\ItemBulk::where('created_by', $user->id)
-        ->where('category', 'single_item')
-        ->orderBy('created_at', 'desc')
-        ->get()
-        ->keyBy('id');
-
-    return [
-        'user' => $user->name,
-        'items_count' => $items->count(),
-        'bulk_data_count' => $itemBulkData->count(),
-        'service_labels' => $serviceTypeLabels,
-        'first_item' => $items->first() ? [
-            'receiver_name' => $items->first()->receiver_name,
-            'created_at' => $items->first()->created_at
-        ] : null
-    ];
+// Customer specific login redirect
+Route::get('/customer', function () {
+    return redirect('/customer/login');
 });
 
 // Admin Routes
 Route::prefix('admin')->name('admin.')->group(function () {
     Route::get('/login', [AdminAuthController::class, 'showLoginForm'])->name('login');
-    Route::post('/login', [AdminAuthController::class, 'login']);
+    Route::post('/login', [AdminAuthController::class, 'login'])->name('login.post');
     Route::get('/register', [AdminAuthController::class, 'showRegistrationForm'])->name('register');
     Route::post('/register', [AdminAuthController::class, 'register']);
     Route::post('/logout', [AdminAuthController::class, 'logout'])->name('logout');
 
-    Route::middleware(['auth', 'role:admin'])->group(function () {
+    Route::middleware(['role:admin'])->group(function () {
         Route::get('/dashboard', [AdminDashboardController::class, 'index'])->name('dashboard');
         Route::get('/users', [AdminDashboardController::class, 'users'])->name('users.index');
         Route::get('/users/create', [AdminDashboardController::class, 'createUser'])->name('users.create');
@@ -104,10 +63,10 @@ Route::prefix('admin')->name('admin.')->group(function () {
 // PM Routes
 Route::prefix('pm')->name('pm.')->group(function () {
     Route::get('/login', [PMAuthController::class, 'showLoginForm'])->name('login');
-    Route::post('/login', [PMAuthController::class, 'login']);
+    Route::post('/login', [PMAuthController::class, 'login'])->name('login.post');
     Route::post('/logout', [PMAuthController::class, 'logout'])->name('logout');
 
-    Route::middleware(['auth', 'role:pm'])->group(function () {
+    Route::middleware(['role:pm'])->group(function () {
         Route::get('/dashboard', [PMDashboardController::class, 'index'])->name('dashboard');
 
         // Customer management
@@ -124,15 +83,13 @@ Route::prefix('pm')->name('pm.')->group(function () {
         Route::patch('/users/{user}/toggle-status', [PMDashboardController::class, 'toggleUserStatus'])->name('users.toggle-status');
 
         // Items management
-        Route::get('/items/pending', [PMDashboardController::class, 'pendingItems'])->name('items.pending');
-        Route::post('/items/{id}/accept', [PMDashboardController::class, 'acceptItem'])->name('items.accept');
-        Route::post('/items/{id}/reject', [PMDashboardController::class, 'rejectItem'])->name('items.reject');
+        Route::get('/items/pending', [PMItemController::class, 'pending'])->name('items.pending');
+        Route::get('/items/{id}/edit', [PMItemController::class, 'edit'])->name('items.edit');
+        Route::post('/items/{id}/accept', [PMItemController::class, 'accept'])->name('items.accept');
+        Route::post('/items/{id}/reject', [PMItemController::class, 'reject'])->name('items.reject');
 
         // Company management routes
         Route::resource('companies', CompanyController::class);
-
-        // Postman management routes
-        Route::resource('postmen', PostmanController::class);
 
         // Delivery management routes (temporarily commented out)
         // Route::resource('deliveries', DeliveryController::class);
@@ -154,12 +111,12 @@ Route::prefix('pm')->name('pm.')->group(function () {
 // Customer Routes
 Route::prefix('customer')->name('customer.')->group(function () {
     Route::get('/login', [CustomerAuthController::class, 'showLoginForm'])->name('login');
-    Route::post('/login', [CustomerAuthController::class, 'login']);
+    Route::post('/login', [CustomerAuthController::class, 'login'])->name('login.post');
     Route::get('/register', [CustomerAuthController::class, 'showRegistrationForm'])->name('register');
     Route::post('/register', [CustomerAuthController::class, 'register']);
     Route::post('/logout', [CustomerAuthController::class, 'logout'])->name('logout');
 
-    Route::middleware(['auth', 'role:customer'])->group(function () {
+    Route::middleware(['role:customer'])->group(function () {
         Route::get('/dashboard', [CustomerDashboardController::class, 'index'])->name('dashboard');
         Route::get('/profile', [CustomerDashboardController::class, 'profile'])->name('profile');
         Route::patch('/profile', [CustomerDashboardController::class, 'updateProfile'])->name('profile.update');
@@ -174,6 +131,9 @@ Route::prefix('customer')->name('customer.')->group(function () {
             Route::post('/bulk-upload', [CustomerDashboardController::class, 'storeBulkUpload'])->name('store-bulk-upload');
             Route::get('/items', [CustomerDashboardController::class, 'items'])->name('items');
             Route::get('/bulk-status/{id}', [CustomerDashboardController::class, 'bulkStatus'])->name('bulk-status');
+            Route::put('/bulk-item/{id}', [CustomerDashboardController::class, 'updateBulkItem'])->name('update-bulk-item');
+            Route::delete('/bulk-item/{id}', [CustomerDashboardController::class, 'deleteBulkItem'])->name('delete-bulk-item');
+            Route::post('/bulk-submit/{id}', [CustomerDashboardController::class, 'submitBulkToPM'])->name('submit-bulk-to-pm');
             Route::post('/get-slp-price', [CustomerDashboardController::class, 'getSlpPrice'])->name('get-slp-price');
             Route::post('/get-postal-price', [CustomerDashboardController::class, 'getPostalPrice'])->name('get-postal-price');
         });
