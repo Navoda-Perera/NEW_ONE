@@ -42,6 +42,12 @@ class TemporaryUpload extends Model
         return $this->hasMany(TemporaryUploadAssociate::class);
     }
 
+    public function itemBulk()
+    {
+        return $this->hasOne(ItemBulk::class, 'created_by', 'user_id')
+                    ->where('category', 'temporary_list');
+    }
+
     // Scopes for role-based access control
     public function scopeSingleItem($query)
     {

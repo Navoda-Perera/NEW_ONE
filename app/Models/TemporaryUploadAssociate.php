@@ -22,7 +22,8 @@ class TemporaryUploadAssociate extends Model
         'receiver_name',
         'barcode',
         'status',
-        'service_type', // Added for per-item service type
+        'service_type',
+        'notes',
     ];
 
     protected $casts = [
