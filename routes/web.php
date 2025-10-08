@@ -69,6 +69,15 @@ Route::prefix('pm')->name('pm.')->group(function () {
     Route::middleware(['role:pm'])->group(function () {
         Route::get('/dashboard', [PMDashboardController::class, 'index'])->name('dashboard');
 
+        // Debug route to test authentication
+        Route::get('/debug', function() {
+            return response()->json([
+                'authenticated' => \Illuminate\Support\Facades\Auth::check(),
+                'user' => \Illuminate\Support\Facades\Auth::user(),
+                'role' => \Illuminate\Support\Facades\Auth::user() ? \Illuminate\Support\Facades\Auth::user()->role : null
+            ]);
+        })->name('debug');
+
         // Customer management
         Route::get('/customers', [PMDashboardController::class, 'customers'])->name('customers.index');
         Route::get('/customers/create', [PMDashboardController::class, 'createCustomer'])->name('customers.create');
@@ -84,9 +93,14 @@ Route::prefix('pm')->name('pm.')->group(function () {
 
         // Items management
         Route::get('/items/pending', [PMItemController::class, 'pending'])->name('items.pending');
+        Route::get('/items/pending/{serviceType}', [PMItemController::class, 'pendingByServiceType'])->name('items.pending.by-service-type');
         Route::get('/items/{id}/edit', [PMItemController::class, 'edit'])->name('items.edit');
         Route::post('/items/{id}/accept', [PMItemController::class, 'accept'])->name('items.accept');
         Route::post('/items/{id}/reject', [PMItemController::class, 'reject'])->name('items.reject');
+
+        // PM Bulk Upload (goes directly to items/item_bulk tables)
+        Route::get('/bulk-upload', [PMDashboardController::class, 'bulkUpload'])->name('bulk-upload');
+        Route::post('/bulk-upload', [PMDashboardController::class, 'storeBulkUpload'])->name('store-bulk-upload');
 
         // Company management routes
         Route::resource('companies', CompanyController::class);
