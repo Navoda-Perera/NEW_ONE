@@ -161,8 +161,8 @@ class CustomerDashboardController extends Controller
             'user_id' => $user->id,
         ]);
 
-        // Calculate postage (you can implement proper calculation logic here)
-        $postage = $this->calculatePostage($request->service_type, $request->weight, $request->amount);
+        // Calculate postage (using default service type since service_type was removed)
+        $postage = $this->calculatePostage($request->service_type ?? 'register_post', $request->weight, $request->amount);
 
         // Create temporary upload associate record with item details
         $temporaryAssociate = TemporaryUploadAssociate::create([
@@ -174,7 +174,8 @@ class CustomerDashboardController extends Controller
             'amount' => $request->amount ?? 0, // Default to 0 if not provided
             'item_value' => $request->item_value,
             'postage' => $postage,
-            'barcode' => $request->barcode, // Optional barcode from customer
+            'commission' => 0, // Default commission
+            'fix_amount' => null, // No fix amount for single items
             'status' => 'pending', // Status is pending until PM accepts
         ]);
 
@@ -250,6 +251,7 @@ class CustomerDashboardController extends Controller
     {
         $request->validate([
             'origin_post_office_id' => 'required|exists:locations,id',
+            'service_type' => 'required|string|in:register_post,slp_courier,cod,remittance',
             'bulk_file' => 'required|file|mimes:csv,xlsx,xls|max:2048',
         ]);
 
@@ -268,34 +270,65 @@ class CustomerDashboardController extends Controller
             'user_id' => $user->id,
         ]);
 
-        // Parse CSV and store each item with its own service_type
+        // Parse CSV and store each item
         $csvPath = $file->getPathname();
         $items = [];
+        $defaultServiceType = $request->service_type; // Service type selected by user
+
         if (($handle = fopen($csvPath, 'r')) !== false) {
             $header = fgetcsv($handle);
+
+            // Clean header (remove empty columns and trim whitespace)
+            $header = array_filter(array_map('trim', $header), function($value) {
+                return $value !== '';
+            });
+
             while (($row = fgetcsv($handle)) !== false) {
-                $item = array_combine($header, $row);
-                // Only allow valid service_type values
-                if (!in_array($item['service_type'], ['register_post', 'slp_courier', 'cod', 'remittance'])) {
-                    $item['service_type'] = 'register_post';
+                // Skip empty rows
+                if (empty(array_filter($row))) {
+                    continue;
                 }
-                TemporaryUploadAssociate::create([
+
+                // Ensure row has same number of elements as header
+                $row = array_slice($row, 0, count($header));
+                if (count($row) < count($header)) {
+                    $row = array_pad($row, count($header), '');
+                }
+
+                $item = array_combine($header, $row);
+
+                // Use service type from CSV if provided, otherwise use the selected default
+                $serviceType = $item['service_type'] ?? $defaultServiceType;
+
+                // Validate service type
+                if (!in_array($serviceType, ['register_post', 'slp_courier', 'cod', 'remittance'])) {
+                    $serviceType = $defaultServiceType;
+                }
+
+                // Create the temporary upload associate record with service type info
+                $tempAssociate = TemporaryUploadAssociate::create([
                     'temporary_id' => $temporaryUpload->id,
+                    'sender_name' => $user->name, // Customer is always the sender
                     'receiver_name' => $item['receiver_name'] ?? '',
                     'receiver_address' => $item['receiver_address'] ?? '',
                     'item_value' => $item['item_value'] ?? 0,
-                    'service_type' => $item['service_type'],
                     'weight' => $item['weight'] ?? 0,
                     'amount' => $item['amount'] ?? 0,
-                    'notes' => $item['notes'] ?? '',
+                    'postage' => $item['postage'] ?? 0,
+                    'commission' => $item['commission'] ?? 0,
+                    'fix_amount' => $item['fix_amount'] ?? null,
                     'status' => 'pending',
+                    'service_type' => $serviceType, // Store service type for later processing
+                    'notes' => $item['notes'] ?? null,
                 ]);
+
+                // Note: ItemBulk records will be created when PM accepts the items
             }
             fclose($handle);
         }
 
         return redirect()->route('customer.services.bulk-status', $temporaryUpload->id)
-            ->with('success', 'File uploaded successfully! Processing will begin shortly.');
+            ->with('success', 'File uploaded successfully! Items have been processed with service type: ' . ucfirst(str_replace('_', ' ', $defaultServiceType)));
     }
 
     public function items(Request $request)

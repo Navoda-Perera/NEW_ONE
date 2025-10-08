@@ -26,8 +26,23 @@
         <div class="col-md-12">
             <div class="d-flex justify-content-between align-items-center mb-4">
                 <div>
-                    <h2 class="fw-bold text-dark mb-0">Pending Items for Approval</h2>
-                    <p class="text-muted mb-0">Review and approve customer submitted items</p>
+                    <h2 class="fw-bold text-dark mb-0">
+                        @if(isset($serviceType))
+                            {{ $serviceTypeLabel }} - Pending Items
+                        @else
+                            Pending Items for Approval
+                        @endif
+                    </h2>
+                    <p class="text-muted mb-0">
+                        @if(isset($serviceType))
+                            Review and approve {{ strtolower($serviceTypeLabel) }} items
+                            <a href="{{ route('pm.items.pending') }}" class="btn btn-sm btn-outline-secondary ms-2">
+                                <i class="bi bi-arrow-left"></i> View All Types
+                            </a>
+                        @else
+                            Review and approve customer submitted items
+                        @endif
+                    </p>
                 </div>
                 <div class="d-flex align-items-center">
                     <span class="badge bg-warning fs-6 me-2">{{ $pendingItems->total() }} Pending</span>
@@ -80,7 +95,15 @@
                                             </td>
                                             <td>
                                                 @php
-                                                    $serviceType = $serviceTypeLabels[$item->service_type] ?? $item->service_type;
+                                                    // Get service type directly from TemporaryUploadAssociate
+                                                    $serviceTypeValue = $item->service_type ?? 'register_post';
+                                                    $serviceTypeLabels = [
+                                                        'register_post' => 'Register Post',
+                                                        'slp_courier' => 'SLP Courier',
+                                                        'cod' => 'COD',
+                                                        'remittance' => 'Remittance'
+                                                    ];
+                                                    $serviceType = $serviceTypeLabels[$serviceTypeValue] ?? $serviceTypeValue;
                                                 @endphp
                                                 <span class="badge bg-info">{{ $serviceType }}</span>
                                             </td>

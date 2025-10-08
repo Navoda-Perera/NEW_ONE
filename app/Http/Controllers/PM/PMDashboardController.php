@@ -6,6 +6,7 @@ use App\Http\Controllers\Controller;
 use App\Models\User;
 use App\Models\Location;
 use App\Models\Item;
+use App\Models\ItemBulk;
 use App\Models\TemporaryUpload;
 use App\Models\TemporaryUploadAssociate;
 use Illuminate\Http\Request;
@@ -25,7 +26,51 @@ class PMDashboardController extends Controller
         $externalCustomers = User::where('user_type', 'external')
                                 ->where('role', 'customer')
                                 ->count();
-        $pendingItemsCount = TemporaryUploadAssociate::where('status', 'pending')->count();
+
+        $currentUser = Auth::user();
+        $pendingItemsCount = TemporaryUploadAssociate::where('status', 'pending')
+                                                    ->whereHas('temporaryUpload', function($query) use ($currentUser) {
+                                                        $query->where('location_id', $currentUser->location_id);
+                                                    })
+                                                    ->count();
+
+        // Get service type breakdowns from TemporaryUploadAssociate table for pending customer uploads
+        $serviceTypeBreakdown = TemporaryUploadAssociate::selectRaw('service_type, COUNT(*) as count')
+                                        ->where('status', 'pending')
+                                        ->whereHas('temporaryUpload', function($query) use ($currentUser) {
+                                            $query->where('location_id', $currentUser->location_id);
+                                        })
+                                        ->groupBy('service_type')
+                                        ->pluck('count', 'service_type')
+                                        ->toArray();
+
+        // Ensure all service types are represented with proper labels
+        $serviceTypes = [
+            'register_post' => [
+                'count' => $serviceTypeBreakdown['register_post'] ?? 0,
+                'label' => 'Register Post',
+                'icon' => 'bi-envelope',
+                'color' => 'primary'
+            ],
+            'slp_courier' => [
+                'count' => $serviceTypeBreakdown['slp_courier'] ?? 0,
+                'label' => 'SLP Courier',
+                'icon' => 'bi-truck',
+                'color' => 'success'
+            ],
+            'cod' => [
+                'count' => $serviceTypeBreakdown['cod'] ?? 0,
+                'label' => 'COD',
+                'icon' => 'bi-cash-coin',
+                'color' => 'warning'
+            ],
+            'remittance' => [
+                'count' => $serviceTypeBreakdown['remittance'] ?? 0,
+                'label' => 'Remittance',
+                'icon' => 'bi-currency-exchange',
+                'color' => 'info'
+            ]
+        ];
 
         // Get current authenticated user with location
         $currentUser = Auth::user();
@@ -33,29 +78,19 @@ class PMDashboardController extends Controller
             $currentUser = User::with('location')->find($currentUser->id);
         }
 
-        return view('pm.dashboard', compact('customerUsers', 'activeCustomers', 'externalCustomers', 'currentUser', 'pendingItemsCount'));
+        return view('pm.dashboard', compact('customerUsers', 'activeCustomers', 'externalCustomers', 'currentUser', 'pendingItemsCount', 'serviceTypes'));
     }
 
     public function customers()
     {
-        // Ensure user is authenticated
-        if (!Auth::check()) {
-            return redirect()->route('pm.login');
-        }
-
         // Get current authenticated user with location using eager loading
-        $currentUser = User::with('location')->where('id', Auth::id())->first();
-
-        if (!$currentUser) {
-            Auth::logout();
-            return redirect()->route('pm.login')->with('error', 'Authentication session expired.');
-        }
+        $currentUser = User::with('location')->find(Auth::id());
 
         // Get customers for this PM's location
         $customers = User::where('role', 'customer');
 
         // Filter by location if PM has a location assigned
-        if ($currentUser->location_id) {
+        if ($currentUser && $currentUser->location_id) {
             $customers = $customers->where('location_id', $currentUser->location_id);
         }
 
@@ -65,18 +100,8 @@ class PMDashboardController extends Controller
     }    // Create Customer methods
     public function createCustomer()
     {
-        // Ensure user is authenticated
-        if (!Auth::check()) {
-            return redirect()->route('pm.login');
-        }
-
         // Get current user's location information
         $currentUser = User::with('location')->find(Auth::id());
-
-        if (!$currentUser) {
-            Auth::logout();
-            return redirect()->route('pm.login')->with('error', 'Authentication session expired.');
-        }
 
         return view('pm.customers.create', compact('currentUser'));
     }
@@ -116,22 +141,17 @@ class PMDashboardController extends Controller
                       ->orderBy('created_at', 'desc')
                       ->paginate(10);
 
-        // Get current user's location information with fallback
-        $currentUser = null;
-        if (Auth::check()) {
-            $currentUser = User::with('location')->find(Auth::id());
-        }
+        // Get current user's location information
+        $currentUser = User::with('location')->find(Auth::id());
 
         return view('pm.postmen.index', compact('postmen', 'currentUser'));
     }
 
     public function createPostman()
     {
-        // Get current user's location information with fallback
-        $currentUser = null;
-        if (Auth::check()) {
-            $currentUser = User::with('location')->find(Auth::id());
-        }
+        // Get current user's location information
+        $currentUser = User::with('location')->find(Auth::id());
+
         return view('pm.postmen.create', compact('currentUser'));
     }
 
@@ -291,5 +311,119 @@ class PMDashboardController extends Controller
         }
 
         return back()->with('success', $message);
+    }
+
+    // PM Bulk Upload Methods
+    public function bulkUpload()
+    {
+        /** @var User $user */
+        $user = Auth::user();
+        $locations = Location::active()->get();
+
+        // Service types for PM uploads
+        $serviceTypes = [
+            'register_post' => 'Register Post',
+            'slp_courier' => 'SLP Courier',
+            'cod' => 'COD',
+            'remittance' => 'Remittance'
+        ];
+
+        return view('pm.bulk-upload', compact('user', 'locations', 'serviceTypes'));
+    }
+
+    public function storeBulkUpload(Request $request)
+    {
+        $request->validate([
+            'origin_post_office_id' => 'required|exists:locations,id',
+            'service_type' => 'required|string|in:register_post,slp_courier,cod,remittance',
+            'bulk_file' => 'required|file|mimes:csv,xlsx,xls|max:2048',
+        ]);
+
+        /** @var User $user */
+        $user = Auth::user();
+
+        // Store the uploaded file
+        $file = $request->file('bulk_file');
+        $filename = time() . '_PM_' . $file->getClientOriginalName();
+        $file->storeAs('bulk_uploads', $filename, 'public');
+
+        // Parse CSV and create items directly (PM uploads go straight to final tables)
+        $csvPath = $file->getPathname();
+        $defaultServiceType = $request->service_type;
+        $itemsCreated = 0;
+
+        DB::beginTransaction();
+        try {
+            if (($handle = fopen($csvPath, 'r')) !== false) {
+                $header = fgetcsv($handle);
+
+                // Clean header
+                $header = array_filter(array_map('trim', $header), function($value) {
+                    return $value !== '';
+                });
+
+                while (($row = fgetcsv($handle)) !== false) {
+                    // Skip empty rows
+                    if (empty(array_filter($row))) {
+                        continue;
+                    }
+
+                    // Ensure row has same number of elements as header
+                    $row = array_slice($row, 0, count($header));
+                    if (count($row) < count($header)) {
+                        $row = array_pad($row, count($header), '');
+                    }
+
+                    $item = array_combine($header, $row);
+
+                    // Use service type from CSV if provided, otherwise use the selected default
+                    $serviceType = $item['service_type'] ?? $defaultServiceType;
+
+                    // Validate service type
+                    if (!in_array($serviceType, ['register_post', 'slp_courier', 'cod', 'remittance'])) {
+                        $serviceType = $defaultServiceType;
+                    }
+
+                    // Generate barcode
+                    $barcode = 'PM' . time() . str_pad($itemsCreated + 1, 4, '0', STR_PAD_LEFT);
+
+                    // Create Item record directly
+                    $newItem = Item::create([
+                        'barcode' => $barcode,
+                        'receiver_name' => $item['receiver_name'] ?? '',
+                        'receiver_address' => $item['receiver_address'] ?? '',
+                        'status' => 'accepted', // PM uploads are automatically accepted
+                        'weight' => $item['weight'] ?? 0,
+                        'amount' => $item['amount'] ?? 0,
+                        'created_by' => $user->id,
+                        'updated_by' => $user->id,
+                    ]);
+
+                    // Create ItemBulk record
+                    ItemBulk::create([
+                        'sender_name' => $item['sender_name'] ?? $user->name,
+                        'service_type' => $serviceType,
+                        'location_id' => $request->origin_post_office_id,
+                        'created_by' => $user->id,
+                        'category' => 'bulk_list', // PM uploads use 'bulk_list' category
+                        'item_quantity' => 1,
+                        'item_id' => $newItem->id,
+                        'notes' => $item['notes'] ?? null,
+                    ]);
+
+                    $itemsCreated++;
+                }
+                fclose($handle);
+            }
+
+            DB::commit();
+
+            return redirect()->route('pm.dashboard')
+                ->with('success', "Bulk upload successful! Created {$itemsCreated} items with service type: " . ucfirst(str_replace('_', ' ', $defaultServiceType)));
+
+        } catch (\Exception $e) {
+            DB::rollback();
+            return back()->withErrors(['bulk_file' => 'Error processing file: ' . $e->getMessage()]);
+        }
     }
 }
