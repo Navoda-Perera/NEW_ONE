@@ -18,6 +18,9 @@ class ItemBulk extends Model
         'created_by',
         'category',
         'item_quantity',
+        'item_id',
+        'notes',
+        'temporary_upload_associate_id',
     ];
 
     protected $casts = [
@@ -33,6 +36,16 @@ class ItemBulk extends Model
     public function creator()
     {
         return $this->belongsTo(User::class, 'created_by');
+    }
+
+    public function item()
+    {
+        return $this->belongsTo(Item::class);
+    }
+
+    public function temporaryUploadAssociate()
+    {
+        return $this->belongsTo(TemporaryUploadAssociate::class);
     }
 
     // Scopes for category enum

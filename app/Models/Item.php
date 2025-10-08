@@ -72,6 +72,11 @@ class Item extends Model
         return $this->hasMany(Withdraw::class);
     }
 
+    public function itemBulk()
+    {
+        return $this->hasOne(ItemBulk::class);
+    }
+
     // Scopes
     public function scopeAccepted($query)
     {
