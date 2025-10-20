@@ -63,7 +63,7 @@ class TestPMWorkflow extends Command
         // Create temporary upload
         $tempUpload = TemporaryUpload::create([
             'user_id' => $customer->id,
-            'service_type' => 'register_post',
+            'category' => 'temporary_list',
             'location_id' => 1, // Default location
         ]);
 

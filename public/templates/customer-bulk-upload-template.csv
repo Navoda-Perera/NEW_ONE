@@ -1,0 +1,4 @@
+receiver_name,receiver_address,contact_number,weight,item_value,service_type
+John Doe Customer,123 Main St Colombo,0771234567,250,1500,register_post
+Jane Smith Customer,456 Oak Ave Kandy,0779876543,500,2500,slp_courier
+Bob Johnson Customer,789 Pine Rd Galle,0776543210,100,800,cod

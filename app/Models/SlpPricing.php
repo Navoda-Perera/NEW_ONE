@@ -39,7 +39,17 @@ class SlpPricing extends Model
             ->where('weight_to', '>=', $weight)
             ->first();
 
-        return $pricing ? $pricing->price : null;
+        if ($pricing) {
+            return (float) $pricing->price;
+        }
+
+        // If no exact match, find the closest higher tier
+        $pricing = self::active()
+            ->where('weight_from', '>', $weight)
+            ->orderBy('weight_from', 'asc')
+            ->first();
+
+        return $pricing ? (float) $pricing->price : null;
     }
 
     // Static method to get all pricing tiers

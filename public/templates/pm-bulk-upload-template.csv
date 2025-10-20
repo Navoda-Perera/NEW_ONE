@@ -1,0 +1,4 @@
+receiver_name,receiver_address,contact_number,weight,item_value,service_type,postage,barcode,sender_name,notes
+John Doe,123 Main St Colombo,0771234567,250,1500,register_post,250,REG123456,ABC Company,Fragile item
+Jane Smith,456 Oak Ave Kandy,0779876543,500,2500,slp_courier,400,SLP789012,XYZ Corp,Handle with care
+Bob Johnson,789 Pine Rd Galle,0776543210,100,800,cod,290,COD345678,DEF Ltd,Express delivery

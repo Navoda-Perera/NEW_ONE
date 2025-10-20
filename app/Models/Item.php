@@ -11,6 +11,7 @@ class Item extends Model
     use HasFactory;
 
     protected $fillable = [
+        'item_bulk_id',
         'barcode',
         'receiver_name',
         'receiver_address',
@@ -27,6 +28,11 @@ class Item extends Model
     ];
 
     // Relationships
+    public function itemBulk()
+    {
+        return $this->belongsTo(ItemBulk::class, 'item_bulk_id');
+    }
+
     public function creator()
     {
         return $this->belongsTo(User::class, 'created_by');
@@ -70,11 +76,6 @@ class Item extends Model
     public function withdraws()
     {
         return $this->hasMany(Withdraw::class);
-    }
-
-    public function itemBulk()
-    {
-        return $this->hasOne(ItemBulk::class);
     }
 
     // Scopes

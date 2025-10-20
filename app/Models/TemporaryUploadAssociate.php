@@ -20,9 +20,10 @@ class TemporaryUploadAssociate extends Model
         'weight',
         'fix_amount',
         'receiver_name',
+        'contact_number',
         'barcode',
-        'status',
         'service_type',
+        'status',
         'notes',
     ];
 
@@ -39,19 +40,6 @@ class TemporaryUploadAssociate extends Model
     public function temporaryUpload()
     {
         return $this->belongsTo(TemporaryUpload::class, 'temporary_id');
-    }
-
-    // Get service type from related ItemBulk record
-    public function getServiceTypeAttribute()
-    {
-        // Find the ItemBulk record for this temporary upload
-        $itemBulk = ItemBulk::where('created_by', $this->temporaryUpload->user_id)
-                           ->where('location_id', $this->temporaryUpload->location_id)
-                           ->where('category', 'single_item')
-                           ->latest()
-                           ->first();
-
-        return $itemBulk ? $itemBulk->service_type : 'register_post';
     }
 
     // Scopes

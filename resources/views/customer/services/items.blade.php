@@ -47,18 +47,22 @@
                 <a href="{{ route('customer.services.items') }}"
                    class="btn {{ !request('status') ? 'btn-primary' : 'btn-outline-primary' }}">
                     All Items
+                    <span class="badge bg-light text-dark ms-1">{{ $statusCounts['total'] }}</span>
                 </a>
                 <a href="{{ route('customer.services.items', ['status' => 'pending']) }}"
                    class="btn {{ request('status') === 'pending' ? 'btn-warning' : 'btn-outline-warning' }}">
                     Pending
+                    <span class="badge bg-light text-dark ms-1">{{ $statusCounts['pending'] }}</span>
                 </a>
                 <a href="{{ route('customer.services.items', ['status' => 'accept']) }}"
                    class="btn {{ request('status') === 'accept' ? 'btn-success' : 'btn-outline-success' }}">
                     Accepted
+                    <span class="badge bg-light text-dark ms-1">{{ $statusCounts['accepted'] }}</span>
                 </a>
                 <a href="{{ route('customer.services.items', ['status' => 'reject']) }}"
                    class="btn {{ request('status') === 'reject' ? 'btn-danger' : 'btn-outline-danger' }}">
                     Rejected
+                    <span class="badge bg-light text-dark ms-1">{{ $statusCounts['rejected'] }}</span>
                 </a>
             </div>
         </div>
@@ -69,83 +73,51 @@
         <div class="col-md-12">
             <div class="card">
                 <div class="card-body">
-                    @if($items->count() > 0)
+                    @if($uploads->count() > 0)
                         <div class="table-responsive">
                             <table class="table table-hover">
                                 <thead>
                                     <tr>
-                                        <th>Receiver</th>
+                                        <th>Upload ID</th>
                                         <th>Service Type</th>
-                                        <th>Barcode</th>
-                                        <th>Weight</th>
-                                        <th>Amount</th>
-                                        <th>Status</th>
+                                        <th>Item Quantity</th>
                                         <th>Created</th>
                                         <th>Actions</th>
                                     </tr>
                                 </thead>
                                 <tbody>
-                                    @foreach($items as $item)
+                                    @foreach($uploads as $upload)
                                         <tr>
                                             <td>
-                                                <div>
-                                                    <strong>{{ $item->receiver_name }}</strong><br>
-                                                    <small class="text-muted">{{ Str::limit($item->receiver_address, 50) }}</small>
-                                                </div>
+                                                <strong>#{{ $upload->id }}</strong>
                                             </td>
                                             <td>
                                                 @php
-                                                    $serviceType = $serviceTypeLabels[$item->service_type] ?? $item->service_type;
+                                                    // Get service type from the first associate since all items in an upload have the same service type
+                                                    $firstAssociate = $upload->associates->first();
+                                                    $serviceType = $firstAssociate ? ($serviceTypeLabels[$firstAssociate->service_type] ?? $firstAssociate->service_type) : 'Not specified';
                                                 @endphp
-                                                <span class="badge bg-info">{{ $serviceType }}</span>
-                                            </td>
-                                            <td>
-                                                @if($item->barcode)
-                                                    <span class="badge bg-success">{{ $item->barcode }}</span>
+                                                @if($firstAssociate && $firstAssociate->service_type)
+                                                    <span class="badge bg-info">{{ $serviceType }}</span>
                                                 @else
-                                                    <span class="badge bg-secondary">Pending</span>
-                                                    <br><small class="text-muted">PM will assign</small>
+                                                    <span class="badge bg-secondary">Not specified</span>
                                                 @endif
                                             </td>
                                             <td>
-                                                @if($item->weight)
-                                                    {{ number_format($item->weight) }}g
+                                                <span class="badge bg-primary fs-6">{{ $upload->total_items ?? $upload->associates_count }}</span>
+                                                @if($upload->total_items == 1)
+                                                    <br><small class="text-muted">Single Item</small>
                                                 @else
-                                                    <span class="text-muted">-</span>
+                                                    <br><small class="text-muted">List Items</small>
                                                 @endif
                                             </td>
-                                            <td>LKR {{ number_format($item->amount, 2) }}</td>
+                                            <td>{{ $upload->created_at->format('M d, Y H:i') }}</td>
                                             <td>
-                                                @switch($item->status)
-                                                    @case('pending')
-                                                        <span class="badge bg-warning">Pending PM Approval</span>
-                                                        @break
-                                                    @case('accept')
-                                                        <span class="badge bg-success">Accepted</span>
-                                                        @break
-                                                    @case('reject')
-                                                        <span class="badge bg-danger">Rejected</span>
-                                                        @break
-                                                    @default
-                                                        <span class="badge bg-secondary">{{ ucfirst($item->status) }}</span>
-                                                @endswitch
-                                            </td>
-                                            <td>{{ $item->created_at->format('M d, Y') }}</td>
-                                            <td>
-                                                <div class="btn-group btn-group-sm">
-                                                    <button class="btn btn-outline-primary btn-sm"
-                                                            onclick="showItemDetails({{ $item->id }})"
-                                                            title="View Details">
-                                                        <i class="bi bi-eye"></i>
-                                                    </button>
-                                                    @if($item->status === 'accept')
-                                                        <button class="btn btn-outline-warning btn-sm"
-                                                                onclick="editItem({{ $item->id }})"
-                                                                title="Edit">
-                                                            <i class="bi bi-pencil"></i>
-                                                        </button>
-                                                    @endif
-                                                </div>
+                                                <button class="btn btn-outline-primary btn-sm"
+                                                        onclick="viewUploadDetails({{ $upload->id }})"
+                                                        title="View Items">
+                                                    <i class="bi bi-eye"></i> View
+                                                </button>
                                             </td>
                                         </tr>
                                     @endforeach
@@ -155,14 +127,17 @@
 
                         <!-- Pagination -->
                         <div class="d-flex justify-content-center">
-                            {{ $items->links() }}
+                            {{ $uploads->links() }}
                         </div>
                     @else
                         <div class="text-center text-muted py-5">
                             <i class="bi bi-inbox fs-1"></i>
-                            <p class="mt-3">No items found.</p>
-                            <a href="{{ route('customer.services.add-single-item') }}" class="btn btn-success">
-                                <i class="bi bi-plus-circle me-2"></i>Add Your First Item
+                            <p class="mt-3">No uploads found.</p>
+                            <a href="{{ route('customer.services.bulk-upload') }}" class="btn btn-success me-2">
+                                <i class="bi bi-upload me-2"></i>Bulk Upload
+                            </a>
+                            <a href="{{ route('customer.services.add-single-item') }}" class="btn btn-outline-success">
+                                <i class="bi bi-plus-circle me-2"></i>Add Single Item
                             </a>
                         </div>
                     @endif
@@ -188,6 +163,11 @@
 </div>
 
 <script>
+function viewUploadDetails(uploadId) {
+    // Redirect to a dedicated page to view upload details
+    window.location.href = `/customer/services/view-upload/${uploadId}`;
+}
+
 function showItemDetails(itemId) {
     // For now, just show a placeholder
     const modal = new bootstrap.Modal(document.getElementById('itemDetailsModal'));

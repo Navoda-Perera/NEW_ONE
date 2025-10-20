@@ -5,9 +5,11 @@ use App\Http\Controllers\Admin\AdminAuthController;
 use App\Http\Controllers\Admin\AdminDashboardController;
 use App\Http\Controllers\Customer\CustomerAuthController;
 use App\Http\Controllers\Customer\CustomerDashboardController;
+use App\Http\Controllers\Customer\CustomerReceiptController;
 use App\Http\Controllers\PM\PMAuthController;
 use App\Http\Controllers\PM\PMDashboardController;
 use App\Http\Controllers\PM\PMItemController;
+use App\Http\Controllers\PM\PMSingleItemController;
 use App\Http\Controllers\CompanyController;
 use App\Http\Controllers\PostmanController;
 // use App\Http\Controllers\DeliveryController; // Temporarily commented out
@@ -96,11 +98,37 @@ Route::prefix('pm')->name('pm.')->group(function () {
         Route::get('/items/pending/{serviceType}', [PMItemController::class, 'pendingByServiceType'])->name('items.pending.by-service-type');
         Route::get('/items/{id}/edit', [PMItemController::class, 'edit'])->name('items.edit');
         Route::post('/items/{id}/accept', [PMItemController::class, 'accept'])->name('items.accept');
+        Route::post('/items/{id}/accept-with-updates', [PMItemController::class, 'acceptWithUpdates'])->name('items.accept-with-updates');
+        Route::post('/items/{id}/quick-accept', [PMItemController::class, 'quickAccept'])->name('items.quick-accept');
         Route::post('/items/{id}/reject', [PMItemController::class, 'reject'])->name('items.reject');
+        Route::post('/items/{id}/update-barcode', [PMItemController::class, 'updateBarcode'])->name('items.update-barcode');
+        Route::post('/bulk-upload/{id}/accept-all', [PMItemController::class, 'acceptBulkUploadCompletely'])->name('bulk-upload.accept-all');
+
+        // Customer uploads management
+        Route::get('/customer-uploads', [PMDashboardController::class, 'customerUploads'])->name('customer-uploads');
+        Route::get('/view-customer-upload/{id}', [PMDashboardController::class, 'viewCustomerUpload'])->name('view-customer-upload');
 
         // PM Bulk Upload (goes directly to items/item_bulk tables)
         Route::get('/bulk-upload', [PMDashboardController::class, 'bulkUpload'])->name('bulk-upload');
         Route::post('/bulk-upload', [PMDashboardController::class, 'storeBulkUpload'])->name('store-bulk-upload');
+        Route::get('/bulk-upload/template', [PMDashboardController::class, 'showBulkUploadTemplate'])->name('bulk-upload.template');
+
+        // SMS Log
+        Route::get('/sms-log', [PMDashboardController::class, 'smsLog'])->name('sms-log');
+
+        // Single Item Management
+        Route::prefix('single-item')->name('single-item.')->group(function () {
+            Route::get('/', [PMSingleItemController::class, 'index'])->name('index');
+            Route::get('/slp-form', [PMSingleItemController::class, 'showSLPForm'])->name('slp-form');
+            Route::get('/cod-form', [PMSingleItemController::class, 'showCODForm'])->name('cod-form');
+            Route::get('/register-form', [PMSingleItemController::class, 'showRegisterForm'])->name('register-form');
+            Route::post('/store-slp', [PMSingleItemController::class, 'storeSLP'])->name('store-slp');
+            Route::post('/store-cod', [PMSingleItemController::class, 'storeCOD'])->name('store-cod');
+            Route::post('/store-register', [PMSingleItemController::class, 'storeRegister'])->name('store-register');
+            Route::post('/calculate-postage', [PMSingleItemController::class, 'calculatePostage'])->name('calculate-postage');
+            Route::get('/receipt/{id}', [PMSingleItemController::class, 'showReceipt'])->name('receipt');
+            Route::get('/print-receipt/{id}', [PMSingleItemController::class, 'printReceipt'])->name('print-receipt');
+        });
 
         // Company management routes
         Route::resource('companies', CompanyController::class);
@@ -143,13 +171,40 @@ Route::prefix('customer')->name('customer.')->group(function () {
             Route::post('/add-single-item', [CustomerDashboardController::class, 'storeSingleItem'])->name('store-single-item');
             Route::get('/bulk-upload', [CustomerDashboardController::class, 'bulkUpload'])->name('bulk-upload');
             Route::post('/bulk-upload', [CustomerDashboardController::class, 'storeBulkUpload'])->name('store-bulk-upload');
+            Route::get('/bulk-upload/template', [CustomerDashboardController::class, 'showBulkUploadTemplate'])->name('bulk-upload.template');
             Route::get('/items', [CustomerDashboardController::class, 'items'])->name('items');
+            Route::get('/view-upload/{id}', [CustomerDashboardController::class, 'viewUpload'])->name('view-upload');
             Route::get('/bulk-status/{id}', [CustomerDashboardController::class, 'bulkStatus'])->name('bulk-status');
+            Route::delete('/bulk-upload/{id}', [CustomerDashboardController::class, 'deleteBulkUpload'])->name('delete-bulk-upload');
             Route::put('/bulk-item/{id}', [CustomerDashboardController::class, 'updateBulkItem'])->name('update-bulk-item');
             Route::delete('/bulk-item/{id}', [CustomerDashboardController::class, 'deleteBulkItem'])->name('delete-bulk-item');
             Route::post('/bulk-submit/{id}', [CustomerDashboardController::class, 'submitBulkToPM'])->name('submit-bulk-to-pm');
             Route::post('/get-slp-price', [CustomerDashboardController::class, 'getSlpPrice'])->name('get-slp-price');
             Route::post('/get-postal-price', [CustomerDashboardController::class, 'getPostalPrice'])->name('get-postal-price');
+            Route::post('/calculate-postage', [CustomerDashboardController::class, 'calculatePostage'])->name('calculate-postage');
+
+            // Debug route for testing postage calculation
+            Route::get('/test-postage', function() {
+                $slpPrice = \App\Models\SlpPricing::calculatePrice(250);
+                $postPrice = \App\Models\PostPricing::calculatePrice(250, \App\Models\PostPricing::TYPE_REGISTER);
+
+                return response()->json([
+                    'slp_price_for_250g' => $slpPrice,
+                    'post_price_for_250g' => $postPrice,
+                    'pricing_tables_exist' => [
+                        'slp_count' => \App\Models\SlpPricing::count(),
+                        'post_count' => \App\Models\PostPricing::count()
+                    ]
+                ]);
+            })->name('test-postage');
+        });
+
+        // Customer Receipt Management
+        Route::prefix('receipts')->name('receipts.')->group(function () {
+            Route::get('/', [CustomerReceiptController::class, 'index'])->name('index');
+            Route::get('/{id}', [CustomerReceiptController::class, 'show'])->name('show');
+            Route::get('/{id}/download', [CustomerReceiptController::class, 'download'])->name('download');
+            Route::post('/search', [CustomerReceiptController::class, 'searchByBarcode'])->name('search');
         });
 
         // Item tracking routes

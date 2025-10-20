@@ -27,7 +27,7 @@ class TestNewWorkflow extends Command
 
         // Create a test temporary upload
         $temporaryUpload = TemporaryUpload::create([
-            'service_type' => 'register_post',
+            'category' => 'temporary_list',
             'location_id' => $user->location_id ?? 1,
             'user_id' => $user->id,
         ]);
@@ -59,7 +59,8 @@ class TestNewWorkflow extends Command
         $this->info("Found {$items->count()} items for customer");
 
         foreach ($items as $item) {
-            $this->info("- Item ID: {$item->id}, Receiver: {$item->receiver_name}, Status: {$item->status}, Service: {$item->temporaryUpload->service_type}");
+            $serviceType = $item->service_type ?? 'register_post';
+            $this->info("- Item ID: {$item->id}, Receiver: {$item->receiver_name}, Status: {$item->status}, Service: {$serviceType}");
         }
 
         $this->info('New workflow test completed successfully!');

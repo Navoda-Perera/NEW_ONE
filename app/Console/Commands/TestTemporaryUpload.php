@@ -27,16 +27,16 @@ class TestTemporaryUpload extends Command
     {
         $this->info('Testing TemporaryUpload with service types...');
 
-        // Test creating TemporaryUpload records with different service types
-        $serviceTypes = ['register_post', 'slp_courier', 'cod', 'remittance'];
+        // Test creating TemporaryUpload records with different categories
+        $categories = ['single_item', 'temporary_list'];
 
-        foreach ($serviceTypes as $type) {
+        foreach ($categories as $category) {
             $temp = \App\Models\TemporaryUpload::create([
-                'service_type' => $type,
+                'category' => $category,
                 'location_id' => 1,
                 'user_id' => 1
             ]);
-            $this->info("Created TemporaryUpload ID: {$temp->id} with service_type: {$temp->service_type}");
+            $this->info("Created TemporaryUpload ID: {$temp->id} with category: {$temp->category}");
         }
 
         $totalCount = \App\Models\TemporaryUpload::count();

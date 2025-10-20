@@ -1,21 +1,26 @@
 @extends('layouts.app')
 
-@section('title', 'Bulk Upload')
+@section('title', 'PM Bulk Upload')
 
 @section('nav-links')
     <li class="nav-item">
-        <a class="nav-link" href="{{ route('customer.dashboard') }}">
+        <a class="nav-link" href="{{ route('pm.dashboard') }}">
             <i class="bi bi-speedometer2"></i> Dashboard
         </a>
     </li>
     <li class="nav-item">
-        <a class="nav-link" href="{{ route('customer.services.index') }}">
-            <i class="bi bi-box-seam"></i> Postal Services
+        <a class="nav-link" href="{{ route('pm.items.pending') }}">
+            <i class="bi bi-clock-history"></i> Pending Items
         </a>
     </li>
     <li class="nav-item">
-        <a class="nav-link" href="{{ route('customer.profile') }}">
-            <i class="bi bi-person"></i> Profile
+        <a class="nav-link active" href="{{ route('pm.bulk-upload') }}">
+            <i class="bi bi-cloud-upload"></i> Bulk Upload
+        </a>
+    </li>
+    <li class="nav-item">
+        <a class="nav-link" href="{{ route('pm.sms-log') }}">
+            <i class="bi bi-chat-dots"></i> SMS Log
         </a>
     </li>
 @endsection
@@ -25,69 +30,51 @@
     <div class="row justify-content-center">
         <div class="col-md-8">
             <div class="d-flex align-items-center mb-4">
-                <a href="{{ route('customer.services.index') }}" class="btn btn-outline-secondary me-3">
+                <a href="{{ route('pm.dashboard') }}" class="btn btn-outline-secondary me-3">
                     <i class="bi bi-arrow-left"></i>
                 </a>
-                <h2 class="fw-bold text-dark mb-0">Bulk Upload <span class="badge bg-info">temporary_list</span></h2>
+                <h2 class="fw-bold text-dark mb-0">PM Bulk Upload <span class="badge bg-success">Direct Processing</span></h2>
             </div>
 
             <!-- Instructions Card -->
             <div class="card mb-4">
-                <div class="card-header bg-info text-white">
-                    <h5 class="mb-0"><i class="bi bi-info-circle me-2"></i>Instructions</h5>
+                <div class="card-header bg-success text-white">
+                    <h5 class="mb-0"><i class="bi bi-info-circle me-2"></i>PM Direct Upload Instructions</h5>
                 </div>
                 <div class="card-body">
-                    <ol class="mb-0">
-                        <li>Download the CSV template below</li>
-                        <li>Fill in your item details following the format</li>
-                        <li>Select the service type for all items in the file</li>
-                        <li>Upload your completed CSV file</li>
-                        <li>Review and confirm the items before final submission</li>
-                    </ol>
-                </div>
-            </div>
-
-            <!-- Template Download -->
-            <div class="card mb-4">
-                <div class="card-body text-center">
-                    <i class="bi bi-download fs-1 text-success mb-3"></i>
-                    <h5>Download CSV Template</h5>
-                    <p class="text-muted">Select a service type above, then download the customized template</p>
-                    <button class="btn btn-success" id="download-template-btn" onclick="downloadTemplate()" disabled>
-                        <i class="bi bi-download me-2"></i>Download Template
-                    </button>
-                    <div id="template-info" class="mt-3" style="display: none;">
-                        <div class="alert alert-info">
-                            <strong id="selected-service-label"></strong> template will include specific columns for this service type.
-                        </div>
+                    <div class="alert alert-info mb-3">
+                        <strong>Note:</strong> PM uploads go directly to the final system (Items & ItemBulk tables) and are automatically accepted.
                     </div>
+                    <ol class="mb-0">
+                        <li>Select the service type for all items in the file</li>
+                        <li>Download the CSV template for the selected service type</li>
+                        <li>Fill in your item details following the format</li>
+                        <li>Upload your completed CSV file</li>
+                        <li>Items will be immediately processed and available in the system</li>
+                    </ol>
                 </div>
             </div>
 
             <!-- Upload Form -->
             <div class="card shadow-sm">
                 <div class="card-body p-4">
-                    <form method="POST" action="{{ route('customer.services.store-bulk-upload') }}"
+                    <form method="POST" action="{{ route('pm.store-bulk-upload') }}"
                           enctype="multipart/form-data">
                         @csrf
 
-                        <!-- Origin Post Office Selection -->
+                        <!-- PM's Post Office (Auto-selected) -->
                         <div class="mb-3">
-                            <label for="origin_post_office_id" class="form-label fw-semibold">
+                            <label class="form-label fw-semibold">
                                 <i class="bi bi-building me-1"></i>Origin Post Office
                             </label>
-                            <select id="origin_post_office_id" class="form-select @error('origin_post_office_id') is-invalid @enderror"
-                                    name="origin_post_office_id" required>
-                                <option value="">Select Origin Post Office</option>
-                                @foreach($locations as $location)
-                                    <option value="{{ $location->id }}" {{ old('origin_post_office_id') == $location->id ? 'selected' : '' }}>
-                                        {{ $location->name }} ({{ $location->code }})
-                                    </option>
-                                @endforeach
-                            </select>
-                            @error('origin_post_office_id')
-                                <div class="invalid-feedback">{{ $message }}</div>
-                            @enderror
+                            <div class="form-control-plaintext bg-light border rounded p-2">
+                                <i class="bi bi-geo-alt-fill text-primary me-2"></i>
+                                <strong>{{ $user->location->name }}</strong> ({{ $user->location->code }})
+                                <small class="text-muted ms-2">- Your assigned post office</small>
+                            </div>
+                            <div class="form-text">
+                                <small class="text-muted">All uploads will be processed from your assigned post office.</small>
+                            </div>
                         </div>
 
                         <!-- Service Type Selection -->
@@ -110,15 +97,13 @@
                             <div class="form-text">
                                 <small class="text-muted">This service type will be applied to all items in the uploaded CSV file.</small>
                             </div>
-                        </div>
 
-
-                        <!-- Service Type Instructions -->
-                        <div class="mb-4">
-                            <div class="alert alert-info">
-                                <strong>Note:</strong> Select the service type above that will apply to all items in your CSV file.
-                                You can also specify individual <code>service_type</code> for each item in your CSV file.
-                                Supported values: <code>register_post</code>, <code>slp_courier</code>, <code>cod</code>, <code>remittance</code>.
+                            <!-- Template Download Button -->
+                            <div class="mt-3">
+                                <button type="button" class="btn btn-outline-success" id="download-template-btn" onclick="downloadTemplate()" disabled>
+                                    <i class="bi bi-download me-2"></i>Download CSV Template
+                                </button>
+                                <small class="text-muted ms-2" id="template-help">Select a service type first to download the template</small>
                             </div>
                         </div>
 
@@ -151,14 +136,21 @@
                             </div>
                         </div>
 
-                        <!-- CSV Format Preview -->
-                        <div class="mb-4" id="csv-format-section" style="display: none;">
+                        <!-- File Format Requirements -->
+                        <div class="mb-4">
                             <div class="card bg-light">
                                 <div class="card-body">
-                                    <h6 class="card-title"><i class="bi bi-table me-2"></i>CSV Format for <span id="csv-service-type"></span></h6>
-                                    <div class="table-responsive">
-                                        <div id="csv-format-table">
-                                            <!-- Dynamic CSV format table will be inserted here -->
+                                    <h6 class="card-title">Required CSV Columns:</h6>
+                                    <div class="alert alert-success mb-3">
+                                        <i class="bi bi-info-circle me-2"></i>
+                                        <strong>Note:</strong> PM uploads go directly to final tables (no approval needed).
+                                    </div>
+
+                                    <!-- Dynamic columns based on service type -->
+                                    <div id="columns-info">
+                                        <div class="alert alert-warning">
+                                            <i class="bi bi-arrow-up me-2"></i>
+                                            Please select a service type above to see the required columns for your template.
                                         </div>
                                     </div>
                                 </div>
@@ -167,13 +159,19 @@
 
                         <!-- Submit Buttons -->
                         <div class="d-grid gap-2 d-md-flex justify-content-md-end">
-                            <a href="{{ route('customer.services.index') }}" class="btn btn-secondary">
+                            <a href="{{ route('pm.dashboard') }}" class="btn btn-secondary">
                                 <i class="bi bi-arrow-left me-2"></i>Cancel
                             </a>
-                            <button type="submit" class="btn btn-primary" id="upload-btn">
-                                <i class="bi bi-cloud-upload me-2"></i>Upload File & Process
+                            <button type="submit" class="btn btn-success" id="upload-btn">
+                                <i class="bi bi-cloud-upload me-2"></i>Process Upload Directly
                             </button>
                         </div>
+                    </form>
+                </div>
+            </div>
+
+            <!-- Sample Data Preview -->
+                                    </div>
                     </form>
                 </div>
             </div>
@@ -194,96 +192,102 @@
         </div>
     </div>
 </div>
+        </div>
+    </div>
+</div>
 
 <script>
-// Service type specific templates and configurations
+// Service type configurations for PM bulk upload (matches customer format but auto-processes)
 const serviceTypeConfigs = {
     'register_post': {
         label: 'Register Post',
         columns: [
             { name: 'receiver_name', label: 'Receiver Name', required: true, example: 'John Doe' },
             { name: 'receiver_address', label: 'Complete Receiver Address', required: true, example: '123 Main St, Colombo 07' },
-            { name: 'item_value', label: 'Item Value (LKR)', required: true, example: '1500.00' },
-            { name: 'weight', label: 'Weight in Grams', required: true, example: '250' },
-            { name: 'postage', label: 'Postage (LKR)', required: false, example: '75.00' },
-            { name: 'barcode', label: 'Barcode (Optional)', required: false, example: 'BC001234567' },
-            { name: 'reg_number', label: 'Registration Number', required: false, example: 'REG001' },
-            { name: 'priority_level', label: 'Priority (normal/express)', required: false, example: 'normal' },
+            { name: 'item_value', label: 'Item Value (LKR)', required: true, example: '2500.00' },
+            { name: 'weight', label: 'Weight in Grams', required: true, example: '500' },
+            { name: 'postage', label: 'Postage (LKR) - Optional', required: false, example: '250.00' },
+            { name: 'barcode', label: 'Barcode - Optional', required: false, example: 'REG1234567' },
+            { name: 'contact_number', label: 'Receiver Contact Number', required: true, example: '0771234567' },
+            { name: 'sender_name', label: 'Sender Name - Optional', required: false, example: 'ABC Company' },
             { name: 'notes', label: 'Additional Notes', required: false, example: 'Handle with care' }
         ],
         sampleData: [
             {
                 receiver_name: 'John Doe',
                 receiver_address: '123 Main St, Colombo 07',
-                item_value: '1500.00',
-                weight: '250',
-                postage: '75.00',
-                barcode: 'BC001234567',
-                reg_number: 'REG001',
-                priority_level: 'normal',
+                item_value: '2500.00',
+                weight: '500',
+                postage: '250.00',
+                barcode: 'REG1234567',
+                contact_number: '0771234567',
+                sender_name: 'ABC Company',
                 notes: 'Handle with care'
             },
             {
                 receiver_name: 'Jane Smith',
-                receiver_address: '456 Galle Road, Dehiwala',
-                item_value: '800.00',
-                weight: '150',
-                postage: '65.00',
-                barcode: 'BC001234568',
-                reg_number: 'REG002',
-                priority_level: 'express',
-                notes: 'Urgent document'
+                receiver_address: '456 Park Road, Kandy',
+                item_value: '1800.00',
+                weight: '300',
+                postage: '250.00',
+                barcode: 'REG1234568',
+                contact_number: '0753456789',
+                sender_name: 'XYZ Store',
+                notes: 'Fragile item'
             }
         ]
     },
     'slp_courier': {
         label: 'SLP Courier',
         columns: [
-            { name: 'receiver_name', label: 'Receiver Name', required: true, example: 'Bob Johnson' },
-            { name: 'receiver_address', label: 'Complete Receiver Address', required: true, example: '789 Kandy Road, Peradeniya' },
-            { name: 'item_value', label: 'Item Value (LKR)', required: true, example: '2000.00' },
-            { name: 'weight', label: 'Weight in Grams', required: true, example: '500' },
-            { name: 'postage', label: 'Postage (LKR)', required: false, example: '120.00' },
-            { name: 'barcode', label: 'Barcode (Optional)', required: false, example: 'SLP001234567' },
-            { name: 'contact_number', label: 'Receiver Contact Number', required: false, example: '0771234567' },
-            { name: 'notes', label: 'Additional Notes', required: false, example: 'Express package' }
+            { name: 'receiver_name', label: 'Receiver Name', required: true, example: 'Alice Johnson' },
+            { name: 'receiver_address', label: 'Complete Receiver Address', required: true, example: '789 Beach Road, Galle' },
+            { name: 'item_value', label: 'Item Value (LKR)', required: true, example: '3500.00' },
+            { name: 'weight', label: 'Weight in Grams', required: true, example: '750' },
+            { name: 'postage', label: 'Postage (LKR) - Optional', required: false, example: '200.00' },
+            { name: 'barcode', label: 'Barcode - Optional', required: false, example: 'SLP1234567' },
+            { name: 'contact_number', label: 'Receiver Contact Number', required: true, example: '0912234567' },
+            { name: 'sender_name', label: 'Sender Name - Optional', required: false, example: 'Online Shop' },
+            { name: 'notes', label: 'Additional Notes', required: false, example: 'Express delivery' }
         ],
         sampleData: [
             {
-                receiver_name: 'Bob Johnson',
-                receiver_address: '789 Kandy Road, Peradeniya',
-                item_value: '2000.00',
-                weight: '500',
-                postage: '120.00',
-                barcode: 'SLP001234567',
-                contact_number: '0771234567',
-                notes: 'Express package'
+                receiver_name: 'Alice Johnson',
+                receiver_address: '789 Beach Road, Galle',
+                item_value: '3500.00',
+                weight: '750',
+                postage: '200.00',
+                barcode: 'SLP1234567',
+                contact_number: '0912234567',
+                sender_name: 'Online Shop',
+                notes: 'Express delivery'
             },
             {
-                receiver_name: 'Alice Brown',
-                receiver_address: '321 Negombo Road, Gampaha',
-                item_value: '1200.00',
-                weight: '300',
-                postage: '95.00',
-                barcode: 'SLP001234568',
-                contact_number: '0779876543',
-                notes: 'Standard delivery'
+                receiver_name: 'Bob Wilson',
+                receiver_address: '321 Hill View, Nuwara Eliya',
+                item_value: '2200.00',
+                weight: '400',
+                postage: '200.00',
+                barcode: 'SLP1234568',
+                contact_number: '0522345678',
+                sender_name: 'Tech Store',
+                notes: 'Electronics - handle carefully'
             }
         ]
     },
     'cod': {
-        label: 'Cash on Delivery (COD)',
+        label: 'COD (Cash on Delivery)',
         columns: [
             { name: 'receiver_name', label: 'Receiver Name', required: true, example: 'Mary Wilson' },
             { name: 'receiver_address', label: 'Complete Receiver Address', required: true, example: '555 Matara Road, Galle' },
             { name: 'item_value', label: 'Item Value (LKR)', required: true, example: '5000.00' },
             { name: 'weight', label: 'Weight in Grams', required: true, example: '1000' },
-            { name: 'postage', label: 'Postage (LKR)', required: false, example: '150.00' },
-            { name: 'barcode', label: 'Barcode (Optional)', required: false, example: 'COD001234567' },
-            { name: 'cod_amount', label: 'COD Collection Amount (LKR)', required: true, example: '5000.00' },
+            { name: 'postage', label: 'Postage (LKR) - Optional', required: false, example: '290.00' },
+            { name: 'barcode', label: 'Barcode - Optional', required: false, example: 'COD1234567' },
             { name: 'contact_number', label: 'Receiver Contact Number', required: true, example: '0751234567' },
+            { name: 'sender_name', label: 'Sender Name - Optional', required: false, example: 'E-commerce Store' },
+            { name: 'cod_amount', label: 'COD Collection Amount (LKR)', required: false, example: '5000.00' },
             { name: 'payment_method', label: 'Payment Method (cash/card)', required: false, example: 'cash' },
-            { name: 'delivery_instructions', label: 'Special Delivery Instructions', required: false, example: 'Call before delivery' },
             { name: 'notes', label: 'Additional Notes', required: false, example: 'COD payment required' }
         ],
         sampleData: [
@@ -292,12 +296,12 @@ const serviceTypeConfigs = {
                 receiver_address: '555 Matara Road, Galle',
                 item_value: '5000.00',
                 weight: '1000',
-                postage: '150.00',
-                barcode: 'COD001234567',
-                cod_amount: '5000.00',
+                postage: '290.00',
+                barcode: 'COD1234567',
                 contact_number: '0751234567',
+                sender_name: 'E-commerce Store',
+                cod_amount: '5000.00',
                 payment_method: 'cash',
-                delivery_instructions: 'Call before delivery',
                 notes: 'COD payment required'
             },
             {
@@ -305,12 +309,12 @@ const serviceTypeConfigs = {
                 receiver_address: '777 Kurunegala Road, Kuliyapitiya',
                 item_value: '3500.00',
                 weight: '750',
-                postage: '130.00',
-                barcode: 'COD001234568',
-                cod_amount: '3500.00',
+                postage: '290.00',
+                barcode: 'COD1234568',
                 contact_number: '0783456789',
+                sender_name: 'Fashion Store',
+                cod_amount: '3500.00',
                 payment_method: 'card',
-                delivery_instructions: 'Deliver to office',
                 notes: 'Business delivery'
             }
         ]
@@ -323,50 +327,104 @@ function updateServiceTypeUI(serviceType) {
     if (!config) {
         // Hide everything if no service type selected
         document.getElementById('download-template-btn').disabled = true;
-        document.getElementById('template-info').style.display = 'none';
-        document.getElementById('csv-format-section').style.display = 'none';
+        const templateHelp = document.getElementById('template-help');
+        if (templateHelp) templateHelp.textContent = 'Select a service type first to download the template';
+
+        document.getElementById('columns-info').innerHTML = `
+            <div class="alert alert-warning">
+                <i class="bi bi-arrow-up me-2"></i>
+                Please select a service type above to see the required columns for your template.
+            </div>
+        `;
         document.getElementById('sample-data-card').style.display = 'none';
         return;
     }
 
-    // Enable download button and show info
+    // Enable download button and update help text
     document.getElementById('download-template-btn').disabled = false;
-    document.getElementById('selected-service-label').textContent = config.label;
-    document.getElementById('template-info').style.display = 'block';
+    const templateHelp = document.getElementById('template-help');
+    if (templateHelp) templateHelp.textContent = `Download ${config.label} template with required columns`;
 
-    // Show CSV format preview
-    updateCSVFormatPreview(serviceType, config);
+    // Update columns info
+    const requiredColumns = config.columns.filter(col => col.required);
+    const optionalColumns = config.columns.filter(col => !col.required);
 
+    let columnsHtml = '<div class="row">';
 
+    // Required columns
+    if (requiredColumns.length > 0) {
+        columnsHtml += '<div class="col-md-6"><h6 class="text-danger mb-3"><i class="bi bi-asterisk me-1"></i>Required Columns:</h6><div class="list-group list-group-flush">';
+        requiredColumns.forEach(col => {
+            columnsHtml += `
+                <div class="list-group-item border-0 px-0 py-2">
+                    <div class="d-flex justify-content-between align-items-start">
+                        <div>
+                            <strong class="text-primary">${col.name}</strong>
+                            <div class="text-muted small">${col.label}</div>
+                        </div>
+                        <span class="badge bg-light text-dark small">${col.example}</span>
+                    </div>
+                </div>
+            `;
+        });
+        columnsHtml += '</div></div>';
+    }
+
+    // Optional columns
+    if (optionalColumns.length > 0) {
+        columnsHtml += '<div class="col-md-6"><h6 class="text-info mb-3"><i class="bi bi-plus-circle me-1"></i>Optional Columns:</h6><div class="list-group list-group-flush">';
+        optionalColumns.forEach(col => {
+            columnsHtml += `
+                <div class="list-group-item border-0 px-0 py-2">
+                    <div class="d-flex justify-content-between align-items-start">
+                        <div>
+                            <strong class="text-secondary">${col.name}</strong>
+                            <div class="text-muted small">${col.label}</div>
+                        </div>
+                        <span class="badge bg-light text-dark small">${col.example}</span>
+                    </div>
+                </div>
+            `;
+        });
+        columnsHtml += '</div></div>';
+    }
+
+    columnsHtml += '</div>';
+    document.getElementById('columns-info').innerHTML = columnsHtml;
+
+    // Update sample data table
+    updateSampleTable(serviceType, config);
 }
-// Function to update CSV format preview
-function updateCSVFormatPreview(serviceType, config) {
+
+// Function to update sample table
+function updateSampleTable(serviceType, config) {
     const columns = config.columns;
-    const sampleData = config.sampleData[0]; // Use first sample row
+    const sampleData = config.sampleData;
 
-    document.getElementById('csv-service-type').textContent = config.label;
-
-    let tableHtml = '<table class="table table-sm table-bordered table-striped"><thead class="table-primary"><tr>';
+    let tableHtml = '<table class="table table-sm table-bordered"><thead class="table-light"><tr>';
 
     // Table headers
     columns.forEach(col => {
         const required = col.required ? ' <span class="text-danger">*</span>' : '';
-        tableHtml += `<th class="text-nowrap small">${col.name}${required}</th>`;
+        tableHtml += `<th>${col.name}${required}</th>`;
     });
-    tableHtml += '</tr></thead><tbody><tr>';
+    tableHtml += '</tr></thead><tbody>';
 
-    // Sample data row
-    columns.forEach(col => {
-        const value = sampleData[col.name] || '';
-        tableHtml += `<td class="small text-muted">${value}</td>`;
+    // Sample data rows
+    sampleData.forEach(row => {
+        tableHtml += '<tr>';
+        columns.forEach(col => {
+            tableHtml += `<td>${row[col.name] || ''}</td>`;
+        });
+        tableHtml += '</tr>';
     });
-    tableHtml += '</tr></tbody></table>';
 
-    document.getElementById('csv-format-table').innerHTML = tableHtml;
-    document.getElementById('csv-format-section').style.display = 'block';
+    tableHtml += '</tbody></table>';
+
+    document.getElementById('sample-table-container').innerHTML = tableHtml;
+    document.getElementById('sample-service-type').textContent = config.label;
+    document.getElementById('sample-data-card').style.display = 'block';
 }
-
-
 
 // Function to generate and download template
 function downloadTemplate() {
@@ -399,7 +457,7 @@ function downloadTemplate() {
     const a = document.createElement('a');
     a.setAttribute('hidden', '');
     a.setAttribute('href', url);
-    a.setAttribute('download', `${serviceType}_bulk_upload_template.csv`);
+    a.setAttribute('download', `pm_${serviceType}_bulk_upload_template.csv`);
     document.body.appendChild(a);
     a.click();
     document.body.removeChild(a);
@@ -464,7 +522,7 @@ document.querySelector('form').addEventListener('submit', function(e) {
 
     // Show loading state
     const btn = document.getElementById('upload-btn');
-    btn.innerHTML = '<i class="bi bi-hourglass-split me-2"></i>Processing...';
+    btn.innerHTML = '<i class="bi bi-hourglass-split me-2"></i>Processing Items...';
     btn.disabled = true;
 });
 

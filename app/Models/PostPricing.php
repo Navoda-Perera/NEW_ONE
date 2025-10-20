@@ -24,7 +24,7 @@ class PostPricing extends Model
         'price' => 'decimal:2',
     ];
 
-    // Service type constant
+    // Service type constants
     const TYPE_REGISTER = 'register';
 
     /**
@@ -37,10 +37,18 @@ class PostPricing extends Model
             ->where('max_weight', '>=', $weight)
             ->first();
 
-        return $pricing ? $pricing->price : null;
-    }
+        if ($pricing) {
+            return (float) $pricing->price;
+        }
 
-    /**
+        // If no exact match, find the closest higher tier
+        $pricing = self::where('service_type', $serviceType)
+            ->where('min_weight', '>', $weight)
+            ->orderBy('min_weight', 'asc')
+            ->first();
+
+        return $pricing ? (float) $pricing->price : null;
+    }    /**
      * Get all pricing tiers for a service type
      */
     public static function getPricingTiers($serviceType = null)

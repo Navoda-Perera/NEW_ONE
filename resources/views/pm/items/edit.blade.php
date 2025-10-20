@@ -9,13 +9,23 @@
         </a>
     </li>
     <li class="nav-item">
-        <a class="nav-link active" href="{{ route('pm.items.pending') }}">
-            <i class="bi bi-clock-history"></i> Pending Items
+        <a class="nav-link" href="{{ route('pm.customers.index') }}">
+            <i class="bi bi-people"></i> Customers
         </a>
     </li>
     <li class="nav-item">
-        <a class="nav-link" href="{{ route('pm.customers.index') }}">
-            <i class="bi bi-people"></i> Customers
+        <a class="nav-link" href="{{ route('pm.single-item.index') }}">
+            <i class="bi bi-box-seam"></i> Add Single Item
+        </a>
+    </li>
+    <li class="nav-item">
+        <a class="nav-link" href="{{ route('pm.bulk-upload') }}">
+            <i class="bi bi-cloud-upload"></i> Bulk Upload
+        </a>
+    </li>
+    <li class="nav-item">
+        <a class="nav-link" href="{{ route('pm.postmen.index') }}">
+            <i class="bi bi-person-badge"></i> Postmen
         </a>
     </li>
 @endsection
@@ -26,8 +36,8 @@
         <div class="col-md-12">
             <div class="d-flex justify-content-between align-items-center mb-4">
                 <div>
-                    <a href="{{ route('pm.items.pending') }}" class="btn btn-outline-secondary me-3">
-                        <i class="bi bi-arrow-left"></i> Back to Pending Items
+                    <a href="{{ route('pm.dashboard') }}" class="btn btn-outline-secondary me-3">
+                        <i class="bi bi-arrow-left"></i> Back to Dashboard
                     </a>
                     <h2 class="fw-bold text-dark mb-0 d-inline">Review & Edit Item Details</h2>
                 </div>
@@ -42,10 +52,10 @@
         <div class="col-md-8">
             <div class="card">
                 <div class="card-header">
-                    <h5 class="mb-0"><i class="bi bi-pencil-square me-2"></i>Item Details - Review & Edit</h5>
+                    <h5 class="mb-0"><i class="bi bi-pencil-square me-2"></i>Item Details</h5>
                 </div>
                 <div class="card-body">
-                    <form method="POST" action="{{ route('pm.items.accept', $temporaryAssociate->id) }}">
+                    <form method="POST" action="{{ route('pm.items.accept', $item->id) }}">
                         @csrf
 
                         <div class="row">
@@ -54,15 +64,15 @@
                                 <h6 class="text-primary mb-3"><i class="bi bi-person me-1"></i>Customer Information</h6>
                                 <div class="mb-3">
                                     <label class="form-label fw-semibold">Customer Name</label>
-                                    <input type="text" class="form-control" value="{{ $temporaryAssociate->temporaryUpload->user->name }}" readonly>
+                                    <input type="text" class="form-control" value="{{ $item->temporaryUpload->user->name }}" readonly>
                                 </div>
                                 <div class="mb-3">
                                     <label class="form-label fw-semibold">Customer Email</label>
-                                    <input type="text" class="form-control" value="{{ $temporaryAssociate->temporaryUpload->user->email ?? 'N/A' }}" readonly>
+                                    <input type="text" class="form-control" value="{{ $item->temporaryUpload->user->email ?? 'N/A' }}" readonly>
                                 </div>
                                 <div class="mb-3">
                                     <label class="form-label fw-semibold">Service Type</label>
-                                    <input type="text" class="form-control" value="{{ $serviceTypeLabels[$temporaryAssociate->service_type] ?? $temporaryAssociate->service_type }}" readonly>
+                                    <input type="text" class="form-control" value="{{ $serviceTypeLabels[$item->service_type] ?? $item->service_type }}" readonly>
                                 </div>
                             </div>
 
@@ -78,7 +88,7 @@
                                            id="weight"
                                            name="weight"
                                            class="form-control @error('weight') is-invalid @enderror"
-                                           value="{{ old('weight', $temporaryAssociate->weight) }}"
+                                           value="{{ old('weight', $item->weight) }}"
                                            step="0.01"
                                            min="0"
                                            required
@@ -99,7 +109,7 @@
                                            id="receiver_name"
                                            name="receiver_name"
                                            class="form-control @error('receiver_name') is-invalid @enderror"
-                                           value="{{ old('receiver_name', $temporaryAssociate->receiver_name) }}"
+                                           value="{{ old('receiver_name', $item->receiver_name) }}"
                                            required>
                                     @error('receiver_name')
                                         <div class="invalid-feedback">{{ $message }}</div>
@@ -114,7 +124,7 @@
                                               name="receiver_address"
                                               class="form-control @error('receiver_address') is-invalid @enderror"
                                               rows="3"
-                                              required>{{ old('receiver_address', $temporaryAssociate->receiver_address) }}</textarea>
+                                              required>{{ old('receiver_address', $item->receiver_address) }}</textarea>
                                     @error('receiver_address')
                                         <div class="invalid-feedback">{{ $message }}</div>
                                     @enderror
@@ -137,7 +147,7 @@
                                            id="amount"
                                            name="amount"
                                            class="form-control @error('amount') is-invalid @enderror"
-                                           value="{{ old('amount', $temporaryAssociate->amount) }}"
+                                           value="{{ old('amount', $item->amount) }}"
                                            step="0.01"
                                            min="0"
                                            required>
@@ -154,7 +164,7 @@
                                            id="item_value"
                                            name="item_value"
                                            class="form-control @error('item_value') is-invalid @enderror"
-                                           value="{{ old('item_value', $temporaryAssociate->item_value) }}"
+                                           value="{{ old('item_value', $item->item_value) }}"
                                            step="0.01"
                                            min="0"
                                            required>
@@ -176,7 +186,7 @@
                                            id="barcode"
                                            name="barcode"
                                            class="form-control @error('barcode') is-invalid @enderror"
-                                           value="{{ old('barcode', $temporaryAssociate->barcode) }}"
+                                           value="{{ old('barcode', $item->barcode) }}"
                                            required
                                            placeholder="Scan or enter barcode manually">
                                     @error('barcode')
@@ -187,9 +197,9 @@
                                     </div>
                                 </div>
 
-                                @if($temporaryAssociate->barcode)
+                                @if($item->barcode)
                                     <div class="alert alert-info">
-                                        <small><i class="bi bi-info-circle me-1"></i>Customer provided barcode: {{ $temporaryAssociate->barcode }}</small>
+                                        <small><i class="bi bi-info-circle me-1"></i>Customer provided barcode: {{ $item->barcode }}</small>
                                     </div>
                                 @endif
                             </div>
@@ -207,7 +217,7 @@
                             <div>
                                 <button type="button"
                                         class="btn btn-danger me-2"
-                                        onclick="rejectItem({{ $temporaryAssociate->id }})">
+                                        onclick="rejectItem({{ $item->id }})">
                                     <i class="bi bi-x-circle me-1"></i>Reject Item
                                 </button>
                                 <button type="submit" class="btn btn-success">
@@ -258,10 +268,10 @@
                     <h6 class="mb-0"><i class="bi bi-person me-2"></i>Customer Details</h6>
                 </div>
                 <div class="card-body">
-                    <p><strong>Name:</strong> {{ $temporaryAssociate->temporaryUpload->user->name }}</p>
-                    <p><strong>NIC:</strong> {{ $temporaryAssociate->temporaryUpload->user->nic }}</p>
-                    <p><strong>Mobile:</strong> {{ $temporaryAssociate->temporaryUpload->user->mobile }}</p>
-                    <p class="mb-0"><strong>Submitted:</strong> {{ $temporaryAssociate->created_at->format('M d, Y H:i') }}</p>
+                    <p><strong>Name:</strong> {{ $item->temporaryUpload->user->name }}</p>
+                    <p><strong>NIC:</strong> {{ $item->temporaryUpload->user->nic }}</p>
+                    <p><strong>Mobile:</strong> {{ $item->temporaryUpload->user->mobile }}</p>
+                    <p class="mb-0"><strong>Submitted:</strong> {{ $item->created_at->format('M d, Y H:i') }}</p>
                 </div>
             </div>
         </div>

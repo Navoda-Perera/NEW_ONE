@@ -20,6 +20,29 @@
     </li>
 @endsection
 
+@section('styles')
+<style>
+    .form-check-input:indeterminate {
+        background-color: #0d6efd;
+        border-color: #0d6efd;
+        background-image: url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 20 20'%3e%3cpath fill='none' stroke='%23fff' stroke-linecap='round' stroke-linejoin='round' stroke-width='3' d='M6 10h8'/%3e%3c/svg%3e");
+    }
+
+    .table-responsive {
+        border-radius: 0.375rem;
+    }
+
+    .btn-group .btn {
+        border-radius: 0.375rem !important;
+        margin-left: 0.25rem;
+    }
+
+    .btn-group .btn:first-child {
+        margin-left: 0;
+    }
+</style>
+@endsection
+
 @section('content')
 <div class="container">
     <div class="row justify-content-center">
@@ -35,27 +58,37 @@
             <div class="card mb-4">
                 <div class="card-header d-flex justify-content-between align-items-center">
                     <h5 class="mb-0">Upload Information</h5>
-                    @switch($temporaryUpload->status)
-                        @case('pending')
-                            <span class="badge bg-warning">Pending</span>
-                            @break
-                        @case('processing')
-                            <span class="badge bg-info">Processing</span>
-                            @break
-                        @case('completed')
-                            <span class="badge bg-success">Completed</span>
-                            @break
-                        @case('failed')
-                            <span class="badge bg-danger">Failed</span>
-                            @break
-                    @endswitch
+                    <div class="d-flex align-items-center">
+                        @switch($temporaryUpload->status)
+                            @case('pending')
+                                <span class="badge bg-warning me-2">Pending</span>
+                                <form action="{{ route('customer.services.delete-bulk-upload', $temporaryUpload->id) }}" method="POST"
+                                      onsubmit="return confirm('Are you sure you want to delete this upload? This action cannot be undone.')"
+                                      class="d-inline">
+                                    @csrf
+                                    @method('DELETE')
+                                    <button type="submit" class="btn btn-sm btn-outline-danger" title="Delete Upload">
+                                        <i class="bi bi-trash"></i>
+                                    </button>
+                                </form>
+                                @break
+                            @case('processing')
+                                <span class="badge bg-info">Processing</span>
+                                @break
+                            @case('completed')
+                                <span class="badge bg-success">Completed</span>
+                                @break
+                            @case('failed')
+                                <span class="badge bg-danger">Failed</span>
+                                @break
+                        @endswitch
+                    </div>
                 </div>
                 <div class="card-body">
                     <div class="row">
                         <div class="col-md-6">
                             <p><strong>File Name:</strong> {{ $temporaryUpload->original_filename }}</p>
                             <p><strong>Upload Date:</strong> {{ $temporaryUpload->created_at->format('M d, Y H:i:s') }}</p>
-                            <p><strong>Total Items:</strong> {{ $temporaryUpload->total_items }}</p>
                         </div>
                         <div class="col-md-6">
                             <p><strong>Status:</strong>
@@ -118,14 +151,92 @@
             <!-- Items from Upload -->
             @if($temporaryUpload->associates && $temporaryUpload->associates->count() > 0)
                 <div class="card">
-                    <div class="card-header">
+                    <div class="card-header d-flex justify-content-between align-items-center">
                         <h5 class="mb-0">Items from Upload ({{ $temporaryUpload->associates->count() }})</h5>
+                        <div class="btn-group">
+                            <button type="button" class="btn btn-outline-primary btn-sm" onclick="selectAll()">
+                                <i class="bi bi-check-all"></i> Select All
+                            </button>
+                            <button type="button" class="btn btn-outline-secondary btn-sm" onclick="selectNone()">
+                                <i class="bi bi-square"></i> Select None
+                            </button>
+                            <button type="button" class="btn btn-outline-danger btn-sm" onclick="deleteSelected()" id="deleteSelectedBtn" disabled>
+                                <i class="bi bi-trash"></i> Delete Selected
+                            </button>
+                        </div>
+                    </div>
+            @else
+                <!-- No Items Found -->
+                <div class="card">
+                    <div class="card-header">
+                        <h5 class="mb-0">Upload Processing Issue</h5>
                     </div>
                     <div class="card-body">
+                        <div class="alert alert-danger">
+                            <i class="bi bi-exclamation-triangle me-2"></i>
+                            <strong>No items were processed from your file.</strong> This could be due to:
+                            <ul class="mt-2 mb-0">
+                                <li>Incorrect file format (make sure it's CSV or Excel)</li>
+                                <li>Missing or incorrectly named column headers</li>
+                                <li>Empty data rows or missing receiver information</li>
+                                <li>File encoding issues</li>
+                            </ul>
+                        </div>
+                        <div class="mt-3">
+                            <a href="{{ route('customer.services.bulk-upload') }}" class="btn btn-primary">
+                                <i class="bi bi-upload"></i> Try Again with New File
+                            </a>
+                            <button class="btn btn-outline-info" onclick="showDebugInfo()">
+                                <i class="bi bi-info-circle"></i> Show Debug Info
+                            </button>
+                        </div>
+
+                        <div id="debugInfo" class="mt-3" style="display: none;">
+                            <div class="alert alert-info">
+                                <strong>Expected CSV Headers:</strong><br>
+                                <code>receiver_name, receiver_address, item_value, weight, postage, contact_number, notes</code>
+                                <br><br>
+                                <strong>Upload Details:</strong><br>
+                                File: {{ $temporaryUpload->original_filename ?? 'Unknown' }}<br>
+                                @php
+                                    $firstAssociate = $temporaryUpload->associates->first();
+                                    $serviceType = $firstAssociate ? $firstAssociate->service_type : 'register_post';
+                                @endphp
+                                Service Type: {{ ucfirst(str_replace('_', ' ', $serviceType)) }}<br>
+                                Upload Time: {{ $temporaryUpload->created_at->format('M d, Y H:i:s') }}
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            @endif
+
+            @if($temporaryUpload->associates && $temporaryUpload->associates->count() > 0)
+                    <div class="card-body">
+                        @php
+                            $missingDataCount = $temporaryUpload->associates->filter(function($associate) {
+                                return empty($associate->receiver_name) || empty($associate->receiver_address);
+                            })->count();
+                        @endphp
+
+                        @if($missingDataCount > 0)
+                            <div class="alert alert-warning mb-3">
+                                <i class="bi bi-exclamation-triangle me-2"></i>
+                                <strong>Data Issue Detected:</strong> {{ $missingDataCount }} item(s) are missing receiver name or address information.
+                                This might be due to incorrect CSV column headers. Please ensure your CSV file has columns named
+                                <code>receiver_name</code> and <code>receiver_address</code> or download a fresh template.
+                            </div>
+                        @endif
+
                         <div class="table-responsive">
                             <table class="table table-hover">
                                 <thead>
                                     <tr>
+                                        <th>
+                                            <div class="form-check">
+                                                <input class="form-check-input" type="checkbox" id="selectAllCheckbox" onchange="toggleAll()">
+                                                <label class="form-check-label" for="selectAllCheckbox"></label>
+                                            </div>
+                                        </th>
                                         <th>#</th>
                                         <th>Receiver</th>
                                         <th>Address</th>
@@ -133,6 +244,7 @@
                                         <th>Amount</th>
                                         <th>Weight</th>
                                         <th>Postage</th>
+                                        <th>Barcode</th>
                                         <th>Status</th>
                                         <th>Actions</th>
                                     </tr>
@@ -140,9 +252,26 @@
                                 <tbody>
                                     @foreach($temporaryUpload->associates as $index => $associate)
                                         <tr>
+                                            <td>
+                                                <div class="form-check">
+                                                    <input class="form-check-input item-checkbox" type="checkbox" value="{{ $associate->id }}" onchange="updateDeleteButton()">
+                                                </div>
+                                            </td>
                                             <td>{{ $index + 1 }}</td>
-                                            <td>{{ $associate->receiver_name }}</td>
-                                            <td>{{ Str::limit($associate->receiver_address, 50) }}</td>
+                                            <td>
+                                                @if($associate->receiver_name)
+                                                    {{ $associate->receiver_name }}
+                                                @else
+                                                    <span class="text-muted fst-italic">Not provided</span>
+                                                @endif
+                                            </td>
+                                            <td>
+                                                @if($associate->receiver_address)
+                                                    {{ Str::limit($associate->receiver_address, 50) }}
+                                                @else
+                                                    <span class="text-muted fst-italic">Not provided</span>
+                                                @endif
+                                            </td>
                                             <td>
                                                 @php
                                                     $typeLabels = [
@@ -164,6 +293,13 @@
                                             </td>
                                             <td>LKR {{ number_format($associate->postage, 2) }}</td>
                                             <td>
+                                                @if($associate->barcode)
+                                                    <code class="text-primary">{{ $associate->barcode }}</code>
+                                                @else
+                                                    <span class="text-muted fst-italic">Not provided</span>
+                                                @endif
+                                            </td>
+                                            <td>
                                                 @switch($associate->status)
                                                     @case('accept')
                                                         <span class="badge bg-success">Accepted</span>
@@ -177,7 +313,7 @@
                                                 @endswitch
                                             </td>
                                             <td>
-                                                <button class="btn btn-sm btn-outline-primary" onclick="editItem({{ $associate->id }}, '{{ $associate->receiver_name }}', '{{ $associate->receiver_address }}', '{{ $associate->item_value }}', '{{ $associate->service_type }}', '{{ $associate->weight }}', '{{ $associate->amount }}')" data-bs-toggle="modal" data-bs-target="#editItemModal">
+                                                <button class="btn btn-sm btn-outline-primary" onclick="editItem({{ $associate->id }}, '{{ $associate->receiver_name }}', '{{ $associate->receiver_address }}', '{{ $associate->item_value }}', '{{ $associate->service_type }}', '{{ $associate->weight }}', '{{ $associate->amount }}', '{{ $associate->barcode }}')" data-bs-toggle="modal" data-bs-target="#editItemModal">
                                                     <i class="bi bi-pencil"></i>
                                                 </button>
                                                 <button class="btn btn-sm btn-outline-danger" onclick="deleteItem({{ $associate->id }})">
@@ -299,6 +435,11 @@
                             </div>
                         </div>
                     </div>
+                    <div class="mb-3">
+                        <label for="edit_barcode" class="form-label">Barcode (Optional)</label>
+                        <input type="text" class="form-control" id="edit_barcode" name="barcode" placeholder="Enter barcode if available">
+                        <div class="form-text">Leave empty if barcode is not available - PM will add it after approval.</div>
+                    </div>
                 </div>
                 <div class="modal-footer">
                     <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
@@ -321,7 +462,7 @@ setTimeout(function() {
 <script>
 let currentEditId = null;
 
-function editItem(id, receiverName, receiverAddress, itemValue, serviceType, weight, amount) {
+function editItem(id, receiverName, receiverAddress, itemValue, serviceType, weight, amount, barcode) {
     currentEditId = id;
     document.getElementById('edit_receiver_name').value = receiverName;
     document.getElementById('edit_receiver_address').value = receiverAddress;
@@ -329,6 +470,7 @@ function editItem(id, receiverName, receiverAddress, itemValue, serviceType, wei
     document.getElementById('edit_service_type').value = serviceType;
     document.getElementById('edit_weight').value = weight;
     document.getElementById('edit_amount').value = amount;
+    document.getElementById('edit_barcode').value = barcode || '';
 }
 
 function deleteItem(id) {
@@ -381,5 +523,124 @@ document.getElementById('editItemForm').addEventListener('submit', function(e) {
         alert('Error updating item');
     });
 });
+
+// Bulk selection functions
+function selectAll() {
+    const checkboxes = document.querySelectorAll('.item-checkbox');
+    const selectAllCheckbox = document.getElementById('selectAllCheckbox');
+
+    checkboxes.forEach(checkbox => {
+        checkbox.checked = true;
+    });
+    selectAllCheckbox.checked = true;
+    updateDeleteButton();
+}
+
+function selectNone() {
+    const checkboxes = document.querySelectorAll('.item-checkbox');
+    const selectAllCheckbox = document.getElementById('selectAllCheckbox');
+
+    checkboxes.forEach(checkbox => {
+        checkbox.checked = false;
+    });
+    selectAllCheckbox.checked = false;
+    updateDeleteButton();
+}
+
+function toggleAll() {
+    const selectAllCheckbox = document.getElementById('selectAllCheckbox');
+    const checkboxes = document.querySelectorAll('.item-checkbox');
+
+    checkboxes.forEach(checkbox => {
+        checkbox.checked = selectAllCheckbox.checked;
+    });
+    updateDeleteButton();
+}
+
+function updateDeleteButton() {
+    const checkedBoxes = document.querySelectorAll('.item-checkbox:checked');
+    const deleteBtn = document.getElementById('deleteSelectedBtn');
+
+    if (checkedBoxes.length > 0) {
+        deleteBtn.disabled = false;
+        deleteBtn.innerHTML = `<i class="bi bi-trash"></i> Delete Selected (${checkedBoxes.length})`;
+    } else {
+        deleteBtn.disabled = true;
+        deleteBtn.innerHTML = '<i class="bi bi-trash"></i> Delete Selected';
+    }
+
+    // Update select all checkbox state
+    const allCheckboxes = document.querySelectorAll('.item-checkbox');
+    const selectAllCheckbox = document.getElementById('selectAllCheckbox');
+
+    if (checkedBoxes.length === allCheckboxes.length) {
+        selectAllCheckbox.checked = true;
+        selectAllCheckbox.indeterminate = false;
+    } else if (checkedBoxes.length > 0) {
+        selectAllCheckbox.checked = false;
+        selectAllCheckbox.indeterminate = true;
+    } else {
+        selectAllCheckbox.checked = false;
+        selectAllCheckbox.indeterminate = false;
+    }
+}
+
+function deleteSelected() {
+    const checkedBoxes = document.querySelectorAll('.item-checkbox:checked');
+
+    if (checkedBoxes.length === 0) {
+        alert('Please select items to delete');
+        return;
+    }
+
+    if (confirm(`Are you sure you want to delete ${checkedBoxes.length} selected item(s)?`)) {
+        const selectedIds = Array.from(checkedBoxes).map(cb => cb.value);
+
+        // Show loading state
+        const deleteBtn = document.getElementById('deleteSelectedBtn');
+        const originalText = deleteBtn.innerHTML;
+        deleteBtn.innerHTML = '<i class="bi bi-hourglass-split"></i> Deleting...';
+        deleteBtn.disabled = true;
+
+        // Delete each item
+        const deletePromises = selectedIds.map(id => {
+            return fetch(`{{ route('customer.services.delete-bulk-item', ':id') }}`.replace(':id', id), {
+                method: 'DELETE',
+                headers: {
+                    'X-CSRF-TOKEN': '{{ csrf_token() }}',
+                    'Content-Type': 'application/json',
+                },
+            });
+        });
+
+        Promise.all(deletePromises)
+            .then(responses => {
+                // Check if all requests were successful
+                const allSuccessful = responses.every(response => response.ok);
+                if (allSuccessful) {
+                    location.reload();
+                } else {
+                    alert('Some items could not be deleted. Please try again.');
+                    deleteBtn.innerHTML = originalText;
+                    deleteBtn.disabled = false;
+                }
+            })
+            .catch(error => {
+                console.error('Error:', error);
+                alert('Error deleting items');
+                deleteBtn.innerHTML = originalText;
+                deleteBtn.disabled = false;
+            });
+    }
+}
+
+function showDebugInfo() {
+    const debugDiv = document.getElementById('debugInfo');
+    if (debugDiv.style.display === 'none') {
+        debugDiv.style.display = 'block';
+    } else {
+        debugDiv.style.display = 'none';
+    }
+}
 </script>
 @endsection
