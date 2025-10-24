@@ -230,10 +230,8 @@ $(document).ready(function() {
         $('#postageMessage').text(message);
     }
 
-    // Auto-generate barcode on page load
-    if (!$('#barcode').val()) {
-        $('#generateBarcode').click();
-    }
+    // PM must enter or generate barcode manually
+    // No automatic barcode generation on page load
 });
 </script>
 @endsection
