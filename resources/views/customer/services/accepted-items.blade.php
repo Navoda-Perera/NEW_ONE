@@ -52,7 +52,7 @@
                    class="btn btn-outline-warning">
                     Pending
                 </a>
-                <a href="{{ route('customer.services.items', ['status' => 'accepted']) }}"
+                <a href="{{ route('customer.services.items', ['status' => 'accept']) }}"
                    class="btn btn-success">
                     Accepted
                 </a>

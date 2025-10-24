@@ -90,11 +90,11 @@ class PMSingleItemController extends Controller
                 'status' => 'accept'
             ]);
 
-            // Create Receipt
+            // Create Receipt (only item amount, no postage)
             $receipt = Receipt::create([
                 'item_quantity' => 1,
                 'item_bulk_id' => $itemBulk->id,
-                'amount' => $postage,
+                'amount' => 0, // SLP has no COD charges, only postage (which we don't include in receipt)
                 'payment_type' => 'cash',
                 'created_by' => $user->id,
                 'location_id' => $user->location_id,
@@ -165,11 +165,11 @@ class PMSingleItemController extends Controller
                 'status' => 'accept'
             ]);
 
-            // Create Receipt
+            // Create Receipt (only item amount, no postage)
             $receipt = Receipt::create([
                 'item_quantity' => 1,
                 'item_bulk_id' => $itemBulk->id,
-                'amount' => $totalAmount,
+                'amount' => $request->amount, // Only item amount, no postage
                 'payment_type' => 'cash',
                 'created_by' => $user->id,
                 'location_id' => $user->location_id,
@@ -238,11 +238,11 @@ class PMSingleItemController extends Controller
                 'status' => 'accept'
             ]);
 
-            // Create Receipt
+            // Create Receipt (only item amount, no postage)
             $receipt = Receipt::create([
                 'item_quantity' => 1,
                 'item_bulk_id' => $itemBulk->id,
-                'amount' => $postage,
+                'amount' => 0, // Register Post has no COD charges, only postage (which we don't include in receipt)
                 'payment_type' => 'cash',
                 'created_by' => $user->id,
                 'location_id' => $user->location_id,

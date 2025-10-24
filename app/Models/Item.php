@@ -99,7 +99,7 @@ class Item extends Model
         return $query->where('status', $status);
     }
 
-    // Auto-generate barcode if not provided
+    // Barcode must be provided from PM/customer - no auto-generation
     protected static function boot()
     {
         parent::boot();

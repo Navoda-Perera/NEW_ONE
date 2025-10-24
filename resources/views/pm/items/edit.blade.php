@@ -55,8 +55,20 @@
                     <h5 class="mb-0"><i class="bi bi-pencil-square me-2"></i>Item Details</h5>
                 </div>
                 <div class="card-body">
-                    <form method="POST" action="{{ route('pm.items.accept', $item->id) }}">
+                    <form method="POST" action="{{ route('pm.items.accept-with-updates', $item->id) }}" id="itemEditForm">
                         @csrf
+
+                        @if(!$item->barcode)
+                            <div class="alert alert-warning border-0 mb-4" role="alert">
+                                <div class="d-flex align-items-center">
+                                    <i class="bi bi-exclamation-triangle-fill fs-4 me-3"></i>
+                                    <div>
+                                        <h6 class="alert-heading mb-1">Barcode Required</h6>
+                                        <p class="mb-0">This customer did not provide a barcode. You must enter or scan a barcode before accepting this item.</p>
+                                    </div>
+                                </div>
+                            </div>
+                        @endif
 
                         <div class="row">
                             <!-- Customer Information (Read-only) -->
@@ -117,6 +129,21 @@
                                 </div>
 
                                 <div class="mb-3">
+                                    <label for="contact_number" class="form-label fw-semibold">
+                                        <i class="bi bi-telephone me-1"></i>Receiver Contact Number
+                                    </label>
+                                    <input type="text"
+                                           id="contact_number"
+                                           name="contact_number"
+                                           class="form-control @error('contact_number') is-invalid @enderror"
+                                           value="{{ old('contact_number', $item->contact_number) }}"
+                                           placeholder="07XXXXXXXX">
+                                    @error('contact_number')
+                                        <div class="invalid-feedback">{{ $message }}</div>
+                                    @enderror
+                                </div>
+
+                                <div class="mb-3">
                                     <label for="receiver_address" class="form-label fw-semibold">
                                         <i class="bi bi-geo-alt me-1"></i>Receiver Address *
                                     </label>
@@ -156,22 +183,33 @@
                                     @enderror
                                 </div>
 
-                                <div class="mb-3">
-                                    <label for="item_value" class="form-label fw-semibold">
-                                        <i class="bi bi-tag me-1"></i>Item Value (LKR) *
-                                    </label>
-                                    <input type="number"
-                                           id="item_value"
-                                           name="item_value"
-                                           class="form-control @error('item_value') is-invalid @enderror"
-                                           value="{{ old('item_value', $item->item_value) }}"
-                                           step="0.01"
-                                           min="0"
-                                           required>
-                                    @error('item_value')
-                                        <div class="invalid-feedback">{{ $message }}</div>
-                                    @enderror
-                                </div>
+                                @if($item->service_type === 'cod')
+                                    <div class="mb-3">
+                                        <label for="item_value" class="form-label fw-semibold">
+                                            <i class="bi bi-tag me-1"></i>Item Value (LKR) *
+                                        </label>
+                                        <input type="number"
+                                               id="item_value"
+                                               name="item_value"
+                                               class="form-control @error('item_value') is-invalid @enderror"
+                                               value="{{ old('item_value', $item->item_value) }}"
+                                               step="0.01"
+                                               min="0"
+                                               required>
+                                        @error('item_value')
+                                            <div class="invalid-feedback">{{ $message }}</div>
+                                        @enderror
+                                        <div class="form-text">
+                                            <small class="text-muted">Required for COD items - value to collect from receiver</small>
+                                        </div>
+                                    </div>
+                                @else
+                                    <input type="hidden" name="item_value" value="0">
+                                    <div class="alert alert-info">
+                                        <i class="bi bi-info-circle me-1"></i>
+                                        <strong>Note:</strong> Item value is not required for {{ $serviceTypeLabels[$item->service_type] ?? $item->service_type }} services.
+                                    </div>
+                                @endif
                             </div>
 
                             <!-- Barcode Entry -->
@@ -220,7 +258,8 @@
                                         onclick="rejectItem({{ $item->id }})">
                                     <i class="bi bi-x-circle me-1"></i>Reject Item
                                 </button>
-                                <button type="submit" class="btn btn-success">
+                                <button type="submit" class="btn btn-success" id="acceptBtn"
+                                        @if(!$item->barcode) disabled @endif>
                                     <i class="bi bi-check-circle me-1"></i>Accept & Process Item
                                 </button>
                             </div>
@@ -279,6 +318,46 @@
 </div>
 
 <script>
+// Enable/disable accept button based on barcode presence
+function checkBarcodeRequirement() {
+    const barcodeInput = document.getElementById('barcode');
+    const acceptBtn = document.getElementById('acceptBtn');
+    const alertSection = document.querySelector('.alert-warning');
+
+    if (barcodeInput && acceptBtn) {
+        const hasBarcode = barcodeInput.value.trim().length > 0;
+
+        if (hasBarcode) {
+            acceptBtn.disabled = false;
+            acceptBtn.classList.remove('btn-secondary');
+            acceptBtn.classList.add('btn-success');
+            if (alertSection) {
+                alertSection.style.display = 'none';
+            }
+        } else {
+            acceptBtn.disabled = true;
+            acceptBtn.classList.remove('btn-success');
+            acceptBtn.classList.add('btn-secondary');
+            if (alertSection) {
+                alertSection.style.display = 'block';
+            }
+        }
+    }
+}
+
+// Initialize barcode checking when page loads
+document.addEventListener('DOMContentLoaded', function() {
+    const barcodeInput = document.getElementById('barcode');
+    if (barcodeInput) {
+        // Check initially
+        checkBarcodeRequirement();
+
+        // Check whenever barcode input changes
+        barcodeInput.addEventListener('input', checkBarcodeRequirement);
+        barcodeInput.addEventListener('change', checkBarcodeRequirement);
+    }
+});
+
 function rejectItem(itemId) {
     if (confirm('Are you sure you want to reject this item? The customer will be notified.')) {
         // Create a form to submit the rejection

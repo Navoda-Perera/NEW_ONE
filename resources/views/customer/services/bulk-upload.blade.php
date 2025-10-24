@@ -203,7 +203,7 @@ const serviceTypeConfigs = {
         columns: [
             { name: 'receiver_name', label: 'Receiver Name', required: true, example: 'John Doe' },
             { name: 'receiver_address', label: 'Complete Receiver Address', required: true, example: '123 Main St, Colombo 07' },
-            { name: 'item_value', label: 'Item Value (LKR)', required: true, example: '1500.00' },
+            { name: 'contact_number', label: 'Receiver Contact Number', required: false, example: '0771234567' },
             { name: 'weight', label: 'Weight in Grams', required: true, example: '250' },
             { name: 'postage', label: 'Postage (LKR)', required: false, example: '75.00' },
             { name: 'barcode', label: 'Barcode (Optional)', required: false, example: 'BC001234567' },
@@ -215,7 +215,7 @@ const serviceTypeConfigs = {
             {
                 receiver_name: 'John Doe',
                 receiver_address: '123 Main St, Colombo 07',
-                item_value: '1500.00',
+                contact_number: '0771234567',
                 weight: '250',
                 postage: '75.00',
                 barcode: 'BC001234567',
@@ -226,7 +226,7 @@ const serviceTypeConfigs = {
             {
                 receiver_name: 'Jane Smith',
                 receiver_address: '456 Galle Road, Dehiwala',
-                item_value: '800.00',
+                contact_number: '0779876543',
                 weight: '150',
                 postage: '65.00',
                 barcode: 'BC001234568',
@@ -241,32 +241,29 @@ const serviceTypeConfigs = {
         columns: [
             { name: 'receiver_name', label: 'Receiver Name', required: true, example: 'Bob Johnson' },
             { name: 'receiver_address', label: 'Complete Receiver Address', required: true, example: '789 Kandy Road, Peradeniya' },
-            { name: 'item_value', label: 'Item Value (LKR)', required: true, example: '2000.00' },
+            { name: 'contact_number', label: 'Receiver Contact Number', required: false, example: '0771234567' },
             { name: 'weight', label: 'Weight in Grams', required: true, example: '500' },
             { name: 'postage', label: 'Postage (LKR)', required: false, example: '120.00' },
             { name: 'barcode', label: 'Barcode (Optional)', required: false, example: 'SLP001234567' },
-            { name: 'contact_number', label: 'Receiver Contact Number', required: false, example: '0771234567' },
             { name: 'notes', label: 'Additional Notes', required: false, example: 'Express package' }
         ],
         sampleData: [
             {
                 receiver_name: 'Bob Johnson',
                 receiver_address: '789 Kandy Road, Peradeniya',
-                item_value: '2000.00',
+                contact_number: '0771234567',
                 weight: '500',
                 postage: '120.00',
                 barcode: 'SLP001234567',
-                contact_number: '0771234567',
                 notes: 'Express package'
             },
             {
                 receiver_name: 'Alice Brown',
                 receiver_address: '321 Negombo Road, Gampaha',
-                item_value: '1200.00',
+                contact_number: '0779876543',
                 weight: '300',
                 postage: '95.00',
                 barcode: 'SLP001234568',
-                contact_number: '0779876543',
                 notes: 'Standard delivery'
             }
         ]

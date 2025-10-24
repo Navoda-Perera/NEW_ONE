@@ -24,23 +24,23 @@ class CustomerDashboardController extends Controller
     {
         /** @var User $user */
         $user = Auth::user();
-        
+
         // Load user with location relationship
         $user = User::with('location')->find($user->id);
-        
+
         // Get user statistics - customer items are submitted through TemporaryUpload
         // and then become ItemBulk when accepted/rejected by PM
         $temporaryUploads = TemporaryUpload::where('user_id', $user->id)->with('associates')->get();
-        
+
         $totalItems = 0;
         $pendingItems = 0;
         $acceptedItems = 0;
         $rejectedItems = 0;
-        
+
         foreach ($temporaryUploads as $upload) {
             $itemCount = $upload->associates->count();
             $totalItems += $itemCount;
-            
+
             if ($upload->status === 'pending') {
                 $pendingItems += $itemCount;
             } elseif ($upload->status === 'accept') {
@@ -178,6 +178,7 @@ class CustomerDashboardController extends Controller
         // Validation rules for items
         $rules = [
             'receiver_name' => 'required|string|max:255',
+            'receiver_mobile' => 'required|string|max:15', // Add receiver mobile validation
             'address' => 'required|string',
             'weight' => 'required|numeric|min:0',
             'service_type' => 'required|in:register_post,slp_courier,cod',
@@ -211,6 +212,7 @@ class CustomerDashboardController extends Controller
             'temporary_id' => $temporaryUpload->id,
             'sender_name' => $user->name,
             'receiver_name' => $request->receiver_name,
+            'contact_number' => $request->receiver_mobile, // Store receiver mobile in contact_number field
             'receiver_address' => $request->address,
             'weight' => $request->weight,
             'amount' => $request->amount ?? 0, // Default to 0 if not provided
@@ -527,9 +529,13 @@ class CustomerDashboardController extends Controller
                                   $item['Receiver Address'] ?? $item['address'] ?? $item['Address'] ??
                                   $item['receiver_addr'] ?? $item['addr'] ?? '';
 
-                $itemValue = $this->parseNumericValue($mappedItem['item_value'] ?? $item['item_value'] ??
-                            $item['Item Value'] ?? $item['value'] ?? $item['Value'] ??
-                            $item['amount'] ?? $item['Amount'] ?? 0);
+                // Only use item_value for COD service type, set to 0 for others
+                $itemValue = 0; // Default to 0 for non-COD services
+                if ($serviceType === 'cod') {
+                    $itemValue = $this->parseNumericValue($mappedItem['item_value'] ?? $item['item_value'] ??
+                                $item['Item Value'] ?? $item['value'] ?? $item['Value'] ??
+                                $item['amount'] ?? $item['Amount'] ?? 0);
+                }
 
                 $weight = $this->parseNumericValue($mappedItem['weight'] ?? $item['weight'] ??
                          $item['Weight'] ?? $item['wt'] ?? $item['Wt'] ?? 0);

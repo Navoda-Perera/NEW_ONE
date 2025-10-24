@@ -2,6 +2,68 @@
 
 @section('title', 'PM Bulk Upload')
 
+@section('styles')
+<style>
+    /* Custom styles for scrollable tables */
+    .scrollable-table-container {
+        max-height: 400px;
+        overflow-y: auto;
+        overflow-x: auto;
+        border: 1px solid #dee2e6;
+        border-radius: 0.375rem;
+    }
+
+    .scrollable-table-container table {
+        margin-bottom: 0;
+    }
+
+    .scrollable-table-container thead th {
+        position: sticky;
+        top: 0;
+        background-color: #f8f9fa;
+        z-index: 10;
+        border-bottom: 2px solid #dee2e6;
+    }
+
+    /* Custom scrollbar styling */
+    .scrollable-table-container::-webkit-scrollbar {
+        width: 8px;
+        height: 8px;
+    }
+
+    .scrollable-table-container::-webkit-scrollbar-track {
+        background: #f1f1f1;
+        border-radius: 4px;
+    }
+
+    .scrollable-table-container::-webkit-scrollbar-thumb {
+        background: #888;
+        border-radius: 4px;
+    }
+
+    .scrollable-table-container::-webkit-scrollbar-thumb:hover {
+        background: #555;
+    }
+
+    /* Ensure table cells don't break on narrow screens */
+    .scrollable-table-container table th,
+    .scrollable-table-container table td {
+        white-space: nowrap;
+        min-width: 120px;
+    }
+
+    /* Columns info container with scroll */
+    .columns-info-container {
+        max-height: 300px;
+        overflow-y: auto;
+        border: 1px solid #dee2e6;
+        border-radius: 0.375rem;
+        padding: 15px;
+        background-color: #f8f9fa;
+    }
+</style>
+@endsection
+
 @section('nav-links')
     <li class="nav-item">
         <a class="nav-link" href="{{ route('pm.dashboard') }}">
@@ -16,11 +78,6 @@
     <li class="nav-item">
         <a class="nav-link active" href="{{ route('pm.bulk-upload') }}">
             <i class="bi bi-cloud-upload"></i> Bulk Upload
-        </a>
-    </li>
-    <li class="nav-item">
-        <a class="nav-link" href="{{ route('pm.sms-log') }}">
-            <i class="bi bi-chat-dots"></i> SMS Log
         </a>
     </li>
 @endsection
@@ -147,7 +204,7 @@
                                     </div>
 
                                     <!-- Dynamic columns based on service type -->
-                                    <div id="columns-info">
+                                    <div id="columns-info" class="columns-info-container">
                                         <div class="alert alert-warning">
                                             <i class="bi bi-arrow-up me-2"></i>
                                             Please select a service type above to see the required columns for your template.
@@ -182,7 +239,7 @@
                     <h6 class="mb-0">Sample CSV Format for <span id="sample-service-type"></span></h6>
                 </div>
                 <div class="card-body">
-                    <div class="table-responsive">
+                    <div class="scrollable-table-container">
                         <div id="sample-table-container">
                             <!-- Dynamic table will be inserted here -->
                         </div>
@@ -390,7 +447,11 @@ function updateServiceTypeUI(serviceType) {
     }
 
     columnsHtml += '</div>';
-    document.getElementById('columns-info').innerHTML = columnsHtml;
+
+    const columnsInfoElement = document.getElementById('columns-info');
+    columnsInfoElement.innerHTML = columnsHtml;
+    // Reset scroll position when content changes
+    columnsInfoElement.scrollTop = 0;
 
     // Update sample data table
     updateSampleTable(serviceType, config);
@@ -401,20 +462,22 @@ function updateSampleTable(serviceType, config) {
     const columns = config.columns;
     const sampleData = config.sampleData;
 
-    let tableHtml = '<table class="table table-sm table-bordered"><thead class="table-light"><tr>';
+    let tableHtml = '<table class="table table-sm table-bordered table-hover mb-0"><thead class="table-success"><tr>';
 
     // Table headers
     columns.forEach(col => {
         const required = col.required ? ' <span class="text-danger">*</span>' : '';
-        tableHtml += `<th>${col.name}${required}</th>`;
+        tableHtml += `<th class="text-nowrap">${col.name}${required}</th>`;
     });
     tableHtml += '</tr></thead><tbody>';
 
     // Sample data rows
-    sampleData.forEach(row => {
-        tableHtml += '<tr>';
+    sampleData.forEach((row, index) => {
+        const rowClass = index % 2 === 0 ? '' : 'table-light';
+        tableHtml += `<tr class="${rowClass}">`;
         columns.forEach(col => {
-            tableHtml += `<td>${row[col.name] || ''}</td>`;
+            const cellValue = row[col.name] || '';
+            tableHtml += `<td class="text-nowrap" title="${cellValue}">${cellValue}</td>`;
         });
         tableHtml += '</tr>';
     });

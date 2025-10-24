@@ -297,13 +297,6 @@ class PMDashboardController extends Controller
         return view('pm.view-customer-upload', compact('upload', 'serviceTypeLabels'));
     }
 
-    public function smsLog(Request $request)
-    {
-        $smsLogs = SmsSent::orderBy('created_at', 'desc')->paginate(20);
-
-        return view('pm.sms-log', compact('smsLogs'));
-    }
-
     public function bulkUpload()
     {
         /** @var User $user */
@@ -485,7 +478,7 @@ class PMDashboardController extends Controller
                         'receiver_name' => trim($item['receiver_name']),
                         'receiver_address' => trim($item['receiver_address'] ?? ''),
                         'contact_number' => trim($item['contact_number'] ?? ''),
-                        'status' => 'accepted', // PM uploads are automatically accepted
+                        'status' => 'accept', // PM uploads are automatically accepted
                         'weight' => $weight,
                         'amount' => floatval($item['item_value'] ?? 0),
                         'postage' => $finalPostage,

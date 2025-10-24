@@ -24,11 +24,6 @@
         </a>
     </li>
     <li class="nav-item">
-        <a class="nav-link" href="{{ route('pm.sms-log') }}">
-            <i class="bi bi-chat-dots"></i> SMS Log
-        </a>
-    </li>
-    <li class="nav-item">
         <a class="nav-link" href="{{ route('pm.postmen.index') }}">
             <i class="bi bi-person-badge"></i> Postmen
         </a>

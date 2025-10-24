@@ -113,9 +113,6 @@ Route::prefix('pm')->name('pm.')->group(function () {
         Route::post('/bulk-upload', [PMDashboardController::class, 'storeBulkUpload'])->name('store-bulk-upload');
         Route::get('/bulk-upload/template', [PMDashboardController::class, 'showBulkUploadTemplate'])->name('bulk-upload.template');
 
-        // SMS Log
-        Route::get('/sms-log', [PMDashboardController::class, 'smsLog'])->name('sms-log');
-
         // Single Item Management
         Route::prefix('single-item')->name('single-item.')->group(function () {
             Route::get('/', [PMSingleItemController::class, 'index'])->name('index');

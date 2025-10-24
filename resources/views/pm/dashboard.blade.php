@@ -80,6 +80,20 @@
 
         <!-- Main Content -->
         <div class="col-md-9 col-lg-10">
+            <!-- Sri Lanka Post Office Header -->
+            <div class="bg-danger text-white p-3 mb-4" style="background: linear-gradient(135deg, #dc3545 0%, #c82333 100%) !important;">
+                <div class="d-flex align-items-center justify-content-center">
+                    <div class="text-center">
+                        <i class="bi bi-mailbox2 display-6 mb-2"></i>
+                        <div>
+                            <h3 class="mb-0 fw-bold">ශ්‍රී ලංකා තැපැල් දෙපාර්තමේන්තුව</h3>
+                            <h4 class="mb-0 fw-bold">Department of Posts - Sri Lanka</h4>
+                            <small class="opacity-75">Postmaster Management System</small>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
             <div class="d-flex justify-content-between align-items-center mb-4 p-3">
                 <h2 class="fw-bold text-dark mb-0">
                     <i class="bi bi-briefcase"></i> Postmaster Dashboard

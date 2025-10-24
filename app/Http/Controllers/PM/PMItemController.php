@@ -129,16 +129,9 @@ class PMItemController extends Controller
 
         DB::beginTransaction();
         try {
-            // Check if this is part of a bulk upload (temporary_list)
-            $temporaryUpload = $item->temporaryUpload;
-
-            if ($temporaryUpload->category === 'temporary_list') {
-                // Handle bulk upload acceptance
-                return $this->acceptBulkUpload($temporaryUpload, $currentUser);
-            } else {
-                // Handle single item acceptance
-                return $this->acceptSingleItem($item, $currentUser);
-            }
+            // Always handle as individual item acceptance
+            // Even if part of temporary_list, accept only this specific item
+            return $this->acceptSingleItemFromAnyCategory($item, $currentUser);
 
         } catch (\Exception $e) {
             DB::rollback();
@@ -149,8 +142,11 @@ class PMItemController extends Controller
 
     private function acceptSingleItem($item, $currentUser)
     {
-        // Generate barcode for the new item
-        $barcode = 'ACC' . time() . str_pad($item->id, 4, '0', STR_PAD_LEFT);
+        // PM must provide barcode before acceptance - no auto-generation
+        $barcode = $item->barcode;
+        if (!$barcode) {
+            return back()->with('error', 'Barcode is required. Please add a barcode first before accepting this item.');
+        }
 
         // Create ItemBulk record first
         $itemBulk = ItemBulk::create([
@@ -168,12 +164,9 @@ class PMItemController extends Controller
             'barcode' => $barcode,
             'receiver_name' => $item->receiver_name,
             'receiver_address' => $item->receiver_address,
-            'contact_number' => $item->contact_number,
             'status' => 'accept',
             'weight' => $item->weight,
-            'amount' => $item->amount,
-            'postage' => $item->postage,
-            'service_type' => $item->service_type,
+            'amount' => $item->amount ?? 0,
             'created_by' => $item->temporaryUpload->user_id, // Original customer
             'updated_by' => $currentUser->id, // PM who accepted
         ]);
@@ -186,12 +179,11 @@ class PMItemController extends Controller
             'status' => 'accept',
         ]);
 
-        // Create Receipt for the accepted item
-        $totalAmount = $item->service_type === 'cod' ? ($item->amount + $item->postage) : $item->postage;
+        // Create Receipt for the accepted item (only item amount, no postage)
         $receipt = Receipt::create([
             'item_quantity' => 1,
             'item_bulk_id' => $itemBulk->id,
-            'amount' => $totalAmount,
+            'amount' => $item->amount ?? 0, // Only item amount, no postage
             'payment_type' => 'cash',
             'created_by' => $currentUser->id,
             'location_id' => $item->temporaryUpload->location_id,
@@ -205,6 +197,120 @@ class PMItemController extends Controller
         DB::commit();
 
         return back()->with('success', 'Item accepted successfully and moved to final system. Barcode: ' . $barcode);
+    }
+
+    private function acceptSingleItemFromAnyCategory($item, $currentUser)
+    {
+        // PM must provide barcode before acceptance - no auto-generation
+        $barcode = $item->barcode;
+        if (!$barcode) {
+            return back()->with('error', 'Barcode is required. Please add a barcode first before accepting this item.');
+        }
+
+        // For items from temporary_list, we need to check if an ItemBulk already exists
+        // If not, create one. If yes, use the existing one.
+        $temporaryUpload = $item->temporaryUpload;
+
+        if ($temporaryUpload->category === 'temporary_list') {
+            // Look for existing ItemBulk for this temporary upload
+            $existingItemBulk = ItemBulk::where('sender_name', $temporaryUpload->user->name)
+                ->where('location_id', $temporaryUpload->location_id)
+                ->where('category', 'temporary_list')
+                ->whereHas('items', function($query) use ($temporaryUpload) {
+                    // Check if any items from this temporary upload already exist
+                    $query->whereIn('created_by', [$temporaryUpload->user_id]);
+                })
+                ->first();
+
+            if (!$existingItemBulk) {
+                // Create new ItemBulk for this temporary upload
+                $itemBulk = ItemBulk::create([
+                    'sender_name' => $temporaryUpload->user->name,
+                    'service_type' => $item->service_type ?? 'register_post',
+                    'location_id' => $temporaryUpload->location_id,
+                    'created_by' => $currentUser->id,
+                    'category' => 'temporary_list',
+                    'item_quantity' => 1, // Will be updated as more items are added
+                ]);
+            } else {
+                $itemBulk = $existingItemBulk;
+                // Update item quantity
+                $itemBulk->increment('item_quantity');
+            }
+        } else {
+            // Single item - create individual ItemBulk
+            $itemBulk = ItemBulk::create([
+                'sender_name' => $temporaryUpload->user->name,
+                'service_type' => $item->service_type ?? 'register_post',
+                'location_id' => $temporaryUpload->location_id,
+                'created_by' => $currentUser->id,
+                'category' => 'single_item',
+                'item_quantity' => 1,
+            ]);
+        }
+
+        // Create Item record from temporary data
+        $newItem = Item::create([
+            'item_bulk_id' => $itemBulk->id,
+            'barcode' => $barcode,
+            'receiver_name' => $item->receiver_name,
+            'receiver_address' => $item->receiver_address,
+            'status' => 'accept',
+            'weight' => $item->weight,
+            'amount' => $item->amount ?? 0,
+            'created_by' => $temporaryUpload->user_id, // Original customer
+            'updated_by' => $currentUser->id, // PM who accepted
+        ]);
+
+        // Log SMS notification for acceptance
+        SmsSent::create([
+            'item_id' => $newItem->id,
+            'sender_mobile' => $temporaryUpload->user->mobile ?? '',
+            'receiver_mobile' => $item->contact_number ?? '',
+            'status' => 'accept'
+        ]);
+
+        // Create or update receipt based on category
+        if ($temporaryUpload->category === 'single_item') {
+            // For single items, create individual receipt with item amount only (no postage)
+            Receipt::create([
+                'item_quantity' => 1,
+                'item_bulk_id' => $itemBulk->id,
+                'amount' => $item->amount ?? 0, // Only item amount, no postage
+                'payment_type' => 'cash',
+                'created_by' => $currentUser->id,
+                'location_id' => $temporaryUpload->location_id,
+                'passcode' => $this->generatePasscode()
+            ]);
+        } else {
+            // For temporary_list (bulk), find existing receipt or create new one
+            $existingReceipt = Receipt::where('item_bulk_id', $itemBulk->id)->first();
+            
+            if ($existingReceipt) {
+                // Update existing receipt with new quantity and amount
+                $existingReceipt->item_quantity = $itemBulk->item_quantity;
+                $existingReceipt->amount += ($item->amount ?? 0); // Add only item amount
+                $existingReceipt->save();
+            } else {
+                // Create new receipt for bulk
+                Receipt::create([
+                    'item_quantity' => $itemBulk->item_quantity,
+                    'item_bulk_id' => $itemBulk->id,
+                    'amount' => $item->amount ?? 0, // Only item amount, no postage
+                    'payment_type' => 'cash',
+                    'created_by' => $currentUser->id,
+                    'location_id' => $temporaryUpload->location_id,
+                    'passcode' => $this->generatePasscode()
+                ]);
+            }
+        }
+
+        // Update temporary item status to accepted
+        $item->update(['status' => 'accept']);
+
+        DB::commit();
+
+        return back()->with('success', 'Individual item accepted successfully and moved to final system. Barcode: ' . $barcode);
     }
 
     private function acceptBulkUpload($temporaryUpload, $currentUser)
@@ -231,10 +337,23 @@ class PMItemController extends Controller
         $acceptedCount = 0;
         $barcodes = [];
 
+        // Check that all items have barcodes before accepting
+        $itemsWithoutBarcode = [];
+        foreach ($pendingItems as $item) {
+            if (!$item->barcode) {
+                $itemsWithoutBarcode[] = "Item ID: {$item->id} (Receiver: {$item->receiver_name})";
+            }
+        }
+
+        if (!empty($itemsWithoutBarcode)) {
+            DB::rollback();
+            $missingList = implode(', ', $itemsWithoutBarcode);
+            return back()->with('error', "Cannot accept bulk upload. The following items are missing barcodes: {$missingList}. Please add barcodes to all items first.");
+        }
+
         // Accept all pending items in the bulk upload
         foreach ($pendingItems as $item) {
-            // Generate barcode for each item
-            $barcode = 'BLK' . time() . str_pad($item->id, 4, '0', STR_PAD_LEFT);
+            $barcode = $item->barcode; // Barcode is guaranteed to exist at this point
             $barcodes[] = $barcode;
 
             // Create Item record from temporary data
@@ -243,12 +362,9 @@ class PMItemController extends Controller
                 'barcode' => $barcode,
                 'receiver_name' => $item->receiver_name,
                 'receiver_address' => $item->receiver_address,
-                'contact_number' => $item->contact_number,
                 'status' => 'accept',
                 'weight' => $item->weight,
-                'amount' => $item->amount,
-                'postage' => $item->postage,
-                'service_type' => $item->service_type,
+                'amount' => $item->amount ?? 0,
                 'created_by' => $temporaryUpload->user_id, // Original customer
                 'updated_by' => $currentUser->id, // PM who accepted
             ]);
@@ -269,14 +385,15 @@ class PMItemController extends Controller
         }
 
         // Create a single receipt for the entire bulk upload
+        // Calculate total amount (only item amounts, no postage)
         $totalBulkAmount = $pendingItems->sum(function($item) {
-            return $item->service_type === 'cod' ? ($item->amount + $item->postage) : $item->postage;
+            return $item->amount ?? 0;
         });
 
         $receipt = Receipt::create([
             'item_quantity' => $acceptedCount,
             'item_bulk_id' => $itemBulk->id,
-            'amount' => $totalBulkAmount,
+            'amount' => $totalBulkAmount, // Only item amounts, no postage
             'payment_type' => 'cash',
             'created_by' => $currentUser->id,
             'location_id' => $temporaryUpload->location_id,
@@ -375,47 +492,64 @@ class PMItemController extends Controller
         ]);
 
         // Validate the request
-        $request->validate([
-            'weight' => 'required|integer|min:1',
+        $rules = [
+            'weight' => 'required|numeric|min:0.01',
+            'receiver_name' => 'required|string|max:255',
+            'receiver_address' => 'required|string',
+            'contact_number' => 'nullable|string|max:15',
+            'amount' => 'required|numeric|min:0',
             'barcode' => 'required|string|max:255'
-        ]);
+        ];
 
+        // Only validate item_value for COD services
         $item = TemporaryUploadAssociate::findOrFail($id);
+        if ($item->service_type === 'cod') {
+            $rules['item_value'] = 'required|numeric|min:0';
+        } else {
+            $rules['item_value'] = 'nullable|numeric|min:0';
+        }
+
+        $request->validate($rules);
 
         // Verify this item belongs to the PM's location
         $currentUser = Auth::user();
         if ($item->temporaryUpload->location_id !== $currentUser->location_id) {
-            return response()->json([
-                'success' => false,
-                'message' => 'Unauthorized access to this item.'
-            ], 403);
+            return back()->with('error', 'Unauthorized access to this item.');
         }
 
         DB::beginTransaction();
         try {
-            // Update weight and barcode if provided
+            // Update all editable fields
             $item->weight = $request->weight;
+            $item->receiver_name = $request->receiver_name;
+            $item->receiver_address = $request->receiver_address;
+            $item->contact_number = $request->contact_number;
+            $item->amount = $request->amount;
+
+            // Only update item_value for COD services, set to 0 for others
+            if ($item->service_type === 'cod') {
+                $item->item_value = $request->item_value ?? 0;
+            } else {
+                $item->item_value = 0;
+            }
 
             // Only update barcode if it's different (in case PM set it earlier)
             if ($item->barcode !== $request->barcode) {
-                // Check barcode uniqueness again
+                // Check barcode uniqueness in temporary table
                 $existingBarcode = TemporaryUploadAssociate::where('barcode', $request->barcode)
                     ->where('id', '!=', $id)
                     ->first();
 
                 if ($existingBarcode) {
-                    return response()->json([
-                        'success' => false,
-                        'message' => 'This barcode is already in use by another item.'
-                    ]);
+                    DB::rollback();
+                    return back()->with('error', 'This barcode is already in use by another item.');
                 }
 
+                // Check barcode uniqueness in main items table
                 $existingItem = Item::where('barcode', $request->barcode)->first();
                 if ($existingItem) {
-                    return response()->json([
-                        'success' => false,
-                        'message' => 'This barcode is already in use in the main system.'
-                    ]);
+                    DB::rollback();
+                    return back()->with('error', 'This barcode is already in use in the main system.');
                 }
 
                 $item->barcode = $request->barcode;
@@ -423,23 +557,12 @@ class PMItemController extends Controller
 
             $item->save();
 
-            // Now accept the item using existing logic
-            $temporaryUpload = $item->temporaryUpload;
-
-            if ($temporaryUpload->category === 'temporary_list') {
-                // Handle bulk upload acceptance
-                $result = $this->acceptBulkUpload($temporaryUpload, $currentUser);
-            } else {
-                // Handle single item acceptance
-                $result = $this->acceptSingleItem($item, $currentUser);
-            }
+            // Accept this individual item regardless of category
+            $result = $this->acceptSingleItemFromAnyCategory($item, $currentUser);
 
             DB::commit();
 
-            return response()->json([
-                'success' => true,
-                'message' => 'Item accepted successfully with updated weight and barcode!'
-            ]);
+            return back()->with('success', 'Item accepted successfully with updated details!');
 
         } catch (\Exception $e) {
             DB::rollback();
@@ -448,6 +571,8 @@ class PMItemController extends Controller
                 'item_id' => $id,
                 'user_id' => Auth::id()
             ]);
+
+            return back()->with('error', 'Error accepting item: ' . $e->getMessage());
 
             return response()->json([
                 'success' => false,
@@ -554,12 +679,9 @@ class PMItemController extends Controller
             'barcode' => $barcode,
             'receiver_name' => $item->receiver_name,
             'receiver_address' => $item->receiver_address,
-            'contact_number' => $item->contact_number,
             'status' => 'accept',
             'weight' => $item->weight,
-            'amount' => $item->amount,
-            'postage' => $item->postage,
-            'service_type' => $item->service_type,
+            'amount' => $item->amount ?? 0,
             'created_by' => $item->temporaryUpload->user_id, // Original customer
             'updated_by' => $currentUser->id, // PM who accepted
         ]);
@@ -623,12 +745,9 @@ class PMItemController extends Controller
                 'barcode' => $barcode,
                 'receiver_name' => $item->receiver_name,
                 'receiver_address' => $item->receiver_address,
-                'contact_number' => $item->contact_number,
                 'status' => 'accept',
                 'weight' => $item->weight,
-                'amount' => $item->amount,
-                'postage' => $item->postage,
-                'service_type' => $item->service_type,
+                'amount' => $item->amount ?? 0,
                 'created_by' => $temporaryUpload->user_id, // Original customer
                 'updated_by' => $currentUser->id, // PM who accepted
             ]);
@@ -702,10 +821,24 @@ class PMItemController extends Controller
             $acceptedCount = 0;
             $barcodes = [];
 
+            // Check that all items have barcodes before accepting entire upload
+            $itemsWithoutBarcode = [];
+            foreach ($pendingItems as $item) {
+                if (!$item->barcode) {
+                    $itemsWithoutBarcode[] = "Item ID: {$item->id} (Receiver: {$item->receiver_name})";
+                }
+            }
+
+            if (!empty($itemsWithoutBarcode)) {
+                DB::rollback();
+                $missingList = implode(', ', $itemsWithoutBarcode);
+                return back()->with('error', "Cannot accept entire bulk upload. The following items are missing barcodes: {$missingList}. Please add barcodes to all items first.");
+            }
+
             // Accept all pending items in the bulk upload
             foreach ($pendingItems as $item) {
-                // Generate barcode for each item
-                $barcode = $item->barcode ?: 'BLK' . time() . str_pad($item->id, 4, '0', STR_PAD_LEFT);
+                // Use existing barcode (PM must have added barcodes for all items)
+                $barcode = $item->barcode;  // Guaranteed to exist at this point
                 $barcodes[] = $barcode;
 
                 // Create Item record from temporary data
@@ -714,12 +847,9 @@ class PMItemController extends Controller
                     'barcode' => $barcode,
                     'receiver_name' => $item->receiver_name,
                     'receiver_address' => $item->receiver_address,
-                    'contact_number' => $item->contact_number,
                     'status' => 'accept',
                     'weight' => $item->weight,
-                    'amount' => $item->amount,
-                    'postage' => $item->postage,
-                    'service_type' => $item->service_type,
+                    'amount' => $item->amount ?? 0,
                     'created_by' => $temporaryUpload->user_id, // Original customer
                     'updated_by' => $currentUser->id, // PM who accepted
                 ]);

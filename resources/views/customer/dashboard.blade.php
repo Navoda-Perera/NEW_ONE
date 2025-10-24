@@ -32,6 +32,24 @@
 
 @section('content')
 <div class="container-fluid">
+    <!-- Sri Lanka Post Office Header -->
+    <div class="row mb-3">
+        <div class="col-12">
+            <div class="bg-danger text-white p-3 rounded shadow-sm" style="background: linear-gradient(135deg, #dc3545 0%, #c82333 100%) !important;">
+                <div class="d-flex align-items-center justify-content-center">
+                    <div class="text-center">
+                        <i class="bi bi-mailbox2 display-6 mb-2"></i>
+                        <div>
+                            <h4 class="mb-0 fw-bold">ශ්‍රී ලංකා තැපැල් දෙපාර්තමේන්තුව</h4>
+                            <h5 class="mb-0 fw-bold">Department of Posts - Sri Lanka</h5>
+                            <small class="opacity-75">Customer Portal</small>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
     <!-- Welcome Header -->
     <div class="row mb-4">
         <div class="col-12">
@@ -59,9 +77,7 @@
                                 <i class="bi bi-shield-check me-2"></i>
                                 <span class="fw-bold">{{ ucfirst(str_replace('_', ' ', $user->user_type)) }} Account</span>
                             </div>
-                        </div>
-                    </div>
-                </div>
+                       
             </div>
         </div>
     </div>
@@ -83,7 +99,7 @@
                 </div>
             </div>
         </div>
-        
+
         <div class="col-lg-3 col-md-6 mb-3">
             <div class="card border-0 shadow-sm h-100" style="background: linear-gradient(135deg, #fff 0%, #fff3cd 100%); border-left: 4px solid #ffc107 !important;">
                 <div class="card-body p-4">
@@ -99,7 +115,7 @@
                 </div>
             </div>
         </div>
-        
+
         <div class="col-lg-3 col-md-6 mb-3">
             <div class="card border-0 shadow-sm h-100" style="background: linear-gradient(135deg, #fff 0%, #d1e7dd 100%); border-left: 4px solid #198754 !important;">
                 <div class="card-body p-4">
@@ -115,7 +131,7 @@
                 </div>
             </div>
         </div>
-        
+
         <div class="col-lg-3 col-md-6 mb-3">
             <div class="card border-0 shadow-sm h-100" style="background: linear-gradient(135deg, #fff 0%, #f8d7da 100%); border-left: 4px solid #dc3545 !important;">
                 <div class="card-body p-4">
@@ -188,17 +204,17 @@
                                         <div>
                                             <h6 class="mb-0 fw-bold text-dark" style="font-family: 'Segoe UI', system-ui; font-weight: 600;">
                                                 @switch($service)
-                                                    @case('cod') 
-                                                        <i class="bi bi-cash text-danger me-2"></i>COD 
+                                                    @case('cod')
+                                                        <i class="bi bi-cash text-danger me-2"></i>COD
                                                     @break
-                                                    @case('register_post') 
-                                                        <i class="bi bi-envelope text-primary me-2"></i>Register Post 
+                                                    @case('register_post')
+                                                        <i class="bi bi-envelope text-primary me-2"></i>Register Post
                                                     @break
-                                                    @case('slp_courier') 
-                                                        <i class="bi bi-truck text-success me-2"></i>SLP Courier 
+                                                    @case('slp_courier')
+                                                        <i class="bi bi-truck text-success me-2"></i>SLP Courier
                                                     @break
-                                                    @case('remittance') 
-                                                        <i class="bi bi-currency-exchange text-warning me-2"></i>Remittance 
+                                                    @case('remittance')
+                                                        <i class="bi bi-currency-exchange text-warning me-2"></i>Remittance
                                                     @break
                                                     @default {{ ucfirst($service) }}
                                                 @endswitch
@@ -238,7 +254,7 @@
                                 <div class="timeline-item mb-3">
                                     <div class="d-flex">
                                         <div class="flex-shrink-0">
-                                            <div class="rounded-circle d-flex align-items-center justify-content-center bg-primary bg-opacity-10" 
+                                            <div class="rounded-circle d-flex align-items-center justify-content-center bg-primary bg-opacity-10"
                                                  style="width: 40px; height: 40px; border: 2px solid rgba(13, 110, 253, 0.2);">
                                                 <i class="bi bi-box text-primary"></i>
                                             </div>
@@ -266,7 +282,7 @@
                                 </div>
                             @endforeach
                         </div>
-                        
+
                         <div class="text-center mt-3">
                             <a href="{{ route('customer.services.items') }}" class="btn btn-outline-primary btn-sm" style="font-weight: 600; border-radius: 6px;">
                                 <i class="bi bi-arrow-right me-1"></i>
@@ -299,7 +315,7 @@
                     <div class="row g-4">
                         <div class="col-md-3">
                             <div class="text-center">
-                                <div class="rounded-circle d-inline-flex align-items-center justify-content-center mb-3 bg-primary bg-opacity-10" 
+                                <div class="rounded-circle d-inline-flex align-items-center justify-content-center mb-3 bg-primary bg-opacity-10"
                                      style="width: 80px; height: 80px; border: 3px solid rgba(13, 110, 253, 0.2);">
                                     <i class="bi bi-person-fill text-primary fs-1"></i>
                                 </div>

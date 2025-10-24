@@ -127,8 +127,8 @@
                                                     <span class="badge bg-success">{{ $item->barcode }}</span>
                                                     <br><small class="text-muted">Customer provided</small>
                                                 @else
-                                                    <span class="badge bg-secondary">Pending</span>
-                                                    <br><small class="text-muted">Will assign on accept</small>
+                                                    <span class="badge bg-warning text-dark">No Barcode</span>
+                                                    <br><small class="text-danger">PM must add barcode first</small>
                                                 @endif
                                             </td>
                                             <td>
@@ -138,12 +138,30 @@
                                             <td>
                                                 @if($item->status === 'pending')
                                                     <div class="d-flex flex-column gap-1">
-                                                        <form action="{{ route('pm.items.accept', $item->id) }}" method="POST" class="d-inline">
-                                                            @csrf
-                                                            <button type="submit" class="btn btn-success btn-sm w-100" title="Accept">
-                                                                <i class="bi bi-check-circle"></i> Accept
-                                                            </button>
-                                                        </form>
+                                                        <a href="{{ route('pm.items.edit', $item->id) }}" class="btn btn-primary btn-sm w-100" title="Edit & Add Barcode">
+                                                            <i class="bi bi-pencil-square"></i>
+                                                            @if($item->barcode)
+                                                                Edit & Review
+                                                            @else
+                                                                Add Barcode & Review
+                                                            @endif
+                                                        </a>
+
+                                                        @if($item->barcode)
+                                                            {{-- Only show Quick Accept if barcode exists --}}
+                                                            <form action="{{ route('pm.items.accept', $item->id) }}" method="POST" class="d-inline">
+                                                                @csrf
+                                                                <button type="submit" class="btn btn-success btn-sm w-100" title="Quick Accept As-Is">
+                                                                    <i class="bi bi-check-circle"></i> Quick Accept
+                                                                </button>
+                                                            </form>
+                                                        @else
+                                                            {{-- Show disabled message when no barcode --}}
+                                                            <div class="btn btn-outline-secondary btn-sm w-100 disabled" title="Add barcode first to accept">
+                                                                <i class="bi bi-exclamation-circle"></i> Barcode Required
+                                                            </div>
+                                                        @endif
+
                                                         <form action="{{ route('pm.items.reject', $item->id) }}" method="POST" class="d-inline">
                                                             @csrf
                                                             <button type="submit" class="btn btn-danger btn-sm w-100"
