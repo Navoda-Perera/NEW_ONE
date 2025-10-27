@@ -19,6 +19,11 @@
         </a>
     </li>
     <li class="nav-item">
+        <a class="nav-link" href="{{ route('pm.item-management.index') }}">
+            <i class="bi bi-search"></i> Item Management
+        </a>
+    </li>
+    <li class="nav-item">
         <a class="nav-link" href="{{ route('pm.bulk-upload') }}">
             <i class="bi bi-cloud-upload"></i> Bulk Upload
         </a>
@@ -61,6 +66,12 @@
                         </a>
                         <a href="{{ route('pm.customers.index') }}" class="list-group-item list-group-item-action">
                             <i class="bi bi-people me-2"></i>Customers
+                        </a>
+                        <a href="{{ route('pm.single-item.index') }}" class="list-group-item list-group-item-action">
+                            <i class="bi bi-box-seam me-2"></i>Add Single Item
+                        </a>
+                        <a href="{{ route('pm.item-management.index') }}" class="list-group-item list-group-item-action">
+                            <i class="bi bi-search me-2"></i>Item Management
                         </a>
                         <a href="{{ route('pm.customer-uploads') }}" class="list-group-item list-group-item-action">
                             <i class="bi bi-person-lines-fill me-2"></i>Customer Uploads

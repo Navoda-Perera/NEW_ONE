@@ -77,7 +77,7 @@
                                 <i class="bi bi-shield-check me-2"></i>
                                 <span class="fw-bold">{{ ucfirst(str_replace('_', ' ', $user->user_type)) }} Account</span>
                             </div>
-                       
+
             </div>
         </div>
     </div>

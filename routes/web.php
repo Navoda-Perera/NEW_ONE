@@ -127,6 +127,16 @@ Route::prefix('pm')->name('pm.')->group(function () {
             Route::get('/print-receipt/{id}', [PMSingleItemController::class, 'printReceipt'])->name('print-receipt');
         });
 
+        // Item Management with Barcode Scanning
+        Route::prefix('item-management')->name('item-management.')->group(function () {
+            Route::get('/', [PMItemController::class, 'management'])->name('index');
+            Route::post('/search-barcode', [PMItemController::class, 'searchByBarcode'])->name('search-barcode');
+            Route::get('/edit/{id}', [PMItemController::class, 'editItem'])->name('edit');
+            Route::put('/update/{id}', [PMItemController::class, 'updateItem'])->name('update');
+            Route::delete('/delete/{id}', [PMItemController::class, 'deleteItem'])->name('delete');
+            Route::get('/items/list', [PMItemController::class, 'itemsList'])->name('items.list');
+        });
+
         // Company management routes
         Route::resource('companies', CompanyController::class);
 

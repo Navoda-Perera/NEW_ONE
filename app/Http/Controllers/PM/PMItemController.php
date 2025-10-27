@@ -285,7 +285,7 @@ class PMItemController extends Controller
         } else {
             // For temporary_list (bulk), find existing receipt or create new one
             $existingReceipt = Receipt::where('item_bulk_id', $itemBulk->id)->first();
-            
+
             if ($existingReceipt) {
                 // Update existing receipt with new quantity and amount
                 $existingReceipt->item_quantity = $itemBulk->item_quantity;
@@ -886,5 +886,185 @@ class PMItemController extends Controller
     private function generatePasscode()
     {
         return str_pad(rand(0, 999999), 6, '0', STR_PAD_LEFT);
+    }
+
+    /**
+     * Item Management Interface
+     */
+    public function management()
+    {
+        // Simple interface focused only on barcode scanning
+        return view('pm.item-management.index');
+    }
+
+    /**
+     * Search item by barcode
+     */
+    public function searchByBarcode(Request $request)
+    {
+        $request->validate([
+            'barcode' => 'required|string'
+        ]);
+
+        $currentUser = Auth::user();
+        $barcode = trim($request->barcode);
+
+        // Search in main items table
+        $item = Item::with(['itemBulk', 'creator', 'updater'])
+            ->where('barcode', $barcode)
+            ->whereHas('itemBulk', function ($query) use ($currentUser) {
+                $query->where('location_id', $currentUser->location_id);
+            })
+            ->first();
+
+        if (!$item) {
+            // Search in temporary upload associates
+            $tempItem = TemporaryUploadAssociate::with(['temporaryUpload.user'])
+                ->where('barcode', $barcode)
+                ->whereHas('temporaryUpload', function ($query) use ($currentUser) {
+                    $query->where('location_id', $currentUser->location_id);
+                })
+                ->first();
+
+            if ($tempItem) {
+                return response()->json([
+                    'success' => true,
+                    'type' => 'temporary',
+                    'item' => $tempItem,
+                    'message' => 'Item found in temporary uploads (not yet processed)'
+                ]);
+            }
+
+            return response()->json([
+                'success' => false,
+                'message' => 'Item not found with barcode: ' . $barcode
+            ]);
+        }
+
+        return response()->json([
+            'success' => true,
+            'type' => 'processed',
+            'item' => $item,
+            'message' => 'Item found successfully'
+        ]);
+    }
+
+    /**
+     * Edit item form
+     */
+    public function editItem($id)
+    {
+        $currentUser = Auth::user();
+
+        $item = Item::with(['itemBulk', 'creator', 'updater'])
+            ->whereHas('itemBulk', function ($query) use ($currentUser) {
+                $query->where('location_id', $currentUser->location_id);
+            })
+            ->findOrFail($id);
+
+        return view('pm.item-management.edit', compact('item'));
+    }
+
+    /**
+     * Update item
+     */
+    public function updateItem(Request $request, $id)
+    {
+        $request->validate([
+            'barcode' => 'required|string|unique:items,barcode,' . $id,
+            'receiver_name' => 'required|string|max:255',
+            'receiver_address' => 'required|string',
+            'weight' => 'required|numeric|min:0',
+            'amount' => 'required|numeric|min:0'
+        ]);
+
+        $currentUser = Auth::user();
+
+        $item = Item::whereHas('itemBulk', function ($query) use ($currentUser) {
+            $query->where('location_id', $currentUser->location_id);
+        })->findOrFail($id);
+
+        $item->update([
+            'barcode' => $request->barcode,
+            'receiver_name' => $request->receiver_name,
+            'receiver_address' => $request->receiver_address,
+            'weight' => $request->weight,
+            'amount' => $request->amount,
+            'updated_by' => $currentUser->id
+        ]);
+
+        if ($request->ajax()) {
+            return response()->json([
+                'success' => true,
+                'message' => 'Item updated successfully',
+                'item' => $item->load(['itemBulk', 'creator', 'updater'])
+            ]);
+        }
+
+        return redirect()->route('pm.item-management.index')
+            ->with('success', 'Item updated successfully');
+    }
+
+    /**
+     * Delete item
+     */
+    public function deleteItem($id)
+    {
+        $currentUser = Auth::user();
+
+        $item = Item::whereHas('itemBulk', function ($query) use ($currentUser) {
+            $query->where('location_id', $currentUser->location_id);
+        })->findOrFail($id);
+
+        // Check if item can be deleted (not dispatched or delivered)
+        if (in_array($item->status, ['dispatched', 'delivered'])) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Cannot delete item that has been dispatched or delivered'
+            ]);
+        }
+
+        $barcode = $item->barcode;
+        $item->delete();
+
+        return response()->json([
+            'success' => true,
+            'message' => 'Item with barcode ' . $barcode . ' deleted successfully'
+        ]);
+    }
+
+    /**
+     * Get items list for AJAX
+     */
+    public function itemsList(Request $request)
+    {
+        $currentUser = Auth::user();
+        $search = $request->get('search');
+        $status = $request->get('status');
+        $perPage = $request->get('per_page', 15);
+
+        $query = Item::with(['itemBulk', 'creator', 'updater'])
+            ->whereHas('itemBulk', function ($query) use ($currentUser) {
+                $query->where('location_id', $currentUser->location_id);
+            });
+
+        if ($search) {
+            $query->where(function ($q) use ($search) {
+                $q->where('barcode', 'like', '%' . $search . '%')
+                  ->orWhere('receiver_name', 'like', '%' . $search . '%')
+                  ->orWhere('receiver_address', 'like', '%' . $search . '%');
+            });
+        }
+
+        if ($status) {
+            $query->where('status', $status);
+        }
+
+        $items = $query->orderBy('created_at', 'desc')->paginate($perPage);
+
+        return response()->json([
+            'success' => true,
+            'items' => $items
+        ]);
     }
 }
