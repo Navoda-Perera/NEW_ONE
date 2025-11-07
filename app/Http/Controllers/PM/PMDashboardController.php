@@ -6,9 +6,12 @@ use App\Http\Controllers\Controller;
 use App\Models\User;
 use App\Models\Location;
 use App\Models\SmsSent;
+use App\Models\TemporaryUpload;
 use App\Models\TemporaryUploadAssociate;
 use App\Models\Item;
 use App\Models\ItemBulk;
+use App\Models\Receipt;
+use App\Models\Payment;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
@@ -17,7 +20,7 @@ class PMDashboardController extends Controller
 {
     public function index()
     {
-        $currentUser = Auth::user();
+        $currentUser = Auth::guard('pm')->user();
 
         // Ensure user is authenticated and has location_id
         if (!$currentUser || !$currentUser->location_id) {
@@ -59,7 +62,7 @@ class PMDashboardController extends Controller
 
     public function customers(Request $request)
     {
-        $currentUser = Auth::user();
+        $currentUser = Auth::guard('pm')->user();
 
         // Ensure user is authenticated and has location_id
         if (!$currentUser || !$currentUser->location_id) {
@@ -90,7 +93,7 @@ class PMDashboardController extends Controller
 
     public function createCustomer()
     {
-        $currentUser = Auth::user();
+        $currentUser = Auth::guard('pm')->user();
 
         // Ensure user is authenticated and has location_id
         if (!$currentUser || !$currentUser->location_id) {
@@ -105,7 +108,7 @@ class PMDashboardController extends Controller
 
     public function storeCustomer(Request $request)
     {
-        $currentUser = Auth::user();
+        $currentUser = Auth::guard('pm')->user();
 
         $request->validate([
             'name' => 'required|string|max:255',
@@ -134,7 +137,7 @@ class PMDashboardController extends Controller
 
     public function customerUploads(Request $request)
     {
-        $currentUser = Auth::user();
+        $currentUser = Auth::guard('pm')->user();
 
         // Ensure user is authenticated and has location_id
         if (!$currentUser || !$currentUser->location_id) {
@@ -189,7 +192,7 @@ class PMDashboardController extends Controller
 
     public function postmen(Request $request)
     {
-        $currentUser = Auth::user();
+        $currentUser = Auth::guard('pm')->user();
 
         // Ensure user is authenticated and has location_id
         if (!$currentUser || !$currentUser->location_id) {
@@ -220,7 +223,7 @@ class PMDashboardController extends Controller
 
     public function createPostman()
     {
-        $currentUser = Auth::user();
+        $currentUser = Auth::guard('pm')->user();
 
         // Ensure user is authenticated and has location_id
         if (!$currentUser || !$currentUser->location_id) {
@@ -235,7 +238,7 @@ class PMDashboardController extends Controller
 
     public function storePostman(Request $request)
     {
-        $currentUser = Auth::user();
+        $currentUser = Auth::guard('pm')->user();
 
         $request->validate([
             'name' => 'required|string|max:255',
@@ -264,7 +267,7 @@ class PMDashboardController extends Controller
 
     public function toggleUserStatus(User $user)
     {
-        $currentUser = Auth::user();
+        $currentUser = Auth::guard('pm')->user();
 
         // Ensure the user being toggled belongs to the PM's location
         if ($user->location_id !== $currentUser->location_id) {
@@ -280,7 +283,7 @@ class PMDashboardController extends Controller
 
     public function viewCustomerUpload($id)
     {
-        $currentUser = Auth::user();
+        $currentUser = Auth::guard('pm')->user();
 
         // Get the specific upload with all its items for PM's location
         $upload = \App\Models\TemporaryUpload::with(['associates', 'location', 'user'])
@@ -300,7 +303,7 @@ class PMDashboardController extends Controller
     public function bulkUpload()
     {
         /** @var User $user */
-        $user = Auth::user();
+        $user = Auth::guard('pm')->user();
 
         // Service types for PM uploads (removed remittance)
         $serviceTypes = [
@@ -320,7 +323,7 @@ class PMDashboardController extends Controller
         ]);
 
         /** @var User $user */
-        $user = Auth::user();
+        $user = Auth::guard('pm')->user();
 
         // Use PM's assigned location as origin post office
         $originLocationId = $user->location_id;
@@ -402,6 +405,9 @@ class PMDashboardController extends Controller
                 }
 
                 $rowNumber = 1; // Start from 1 (excluding header)
+                $validItems = []; // Store valid items for bulk creation
+
+                // First pass: Validate and collect all valid items
                 while (($row = fgetcsv($handle)) !== false) {
                     $rowNumber++;
 
@@ -434,6 +440,37 @@ class PMDashboardController extends Controller
                         $serviceType = $defaultServiceType;
                     }
 
+                    $validItems[] = [
+                        'data' => $item,
+                        'service_type' => $serviceType,
+                        'row_number' => $rowNumber
+                    ];
+                }
+
+                // If no valid items, rollback
+                if (empty($validItems)) {
+                    fclose($handle);
+                    DB::rollback();
+                    return back()->withErrors(['bulk_file' => 'No valid items found in CSV file.']);
+                }
+
+                // Create single ItemBulk record for the entire bulk upload
+                $itemBulk = ItemBulk::create([
+                    'sender_name' => $user->name, // PM name as sender
+                    'service_type' => $defaultServiceType,
+                    'location_id' => $originLocationId,
+                    'created_by' => $user->id,
+                    'category' => 'bulk_list', // PM uploads use 'bulk_list' category
+                    'item_quantity' => count($validItems),
+                ]);
+
+                $totalAmount = 0;
+
+                // Second pass: Create all items linked to the single ItemBulk
+                foreach ($validItems as $validItem) {
+                    $item = $validItem['data'];
+                    $serviceType = $validItem['service_type'];
+
                     // Auto-calculate postage based on weight and service type
                     $weight = floatval($item['weight'] ?? 0);
                     $postage = 0;
@@ -460,18 +497,7 @@ class PMDashboardController extends Controller
                                         ($serviceType === 'register_post' ? 'REG' : 'COD')) .
                               time() . str_pad($itemsCreated + 1, 4, '0', STR_PAD_LEFT);
 
-                    // Create ItemBulk record first
-                    $itemBulk = ItemBulk::create([
-                        'sender_name' => trim($item['sender_name'] ?? $user->name),
-                        'service_type' => $serviceType,
-                        'location_id' => $originLocationId,
-                        'created_by' => $user->id,
-                        'category' => 'bulk_list', // PM uploads use 'bulk_list' category
-                        'item_quantity' => 1,
-                        'notes' => trim($item['notes'] ?? ''),
-                    ]);
-
-                    // Create Item record directly (auto-accepted for PM uploads)
+                    // Create Item record linked to the single ItemBulk
                     $newItem = Item::create([
                         'item_bulk_id' => $itemBulk->id,
                         'barcode' => $barcode,
@@ -488,7 +514,18 @@ class PMDashboardController extends Controller
                         'updated_by' => $user->id,
                     ]);
 
-                    // Log SMS notification for PM bulk upload acceptance
+                    // Create Payment record for COD items in PM bulk upload
+                    if ($serviceType === 'cod' && floatval($item['item_value'] ?? 0) > 0) {
+                        Payment::create([
+                            'item_id' => $newItem->id,
+                            'fixed_amount' => floatval($item['item_value'] ?? 0),
+                            'commission' => floatval($item['commission'] ?? 0),
+                            'item_value' => floatval($item['item_value'] ?? 0),
+                            'status' => 'accept',
+                        ]);
+                    }
+
+                    // Create SMS notification for each item
                     SmsSent::create([
                         'item_id' => $newItem->id,
                         'sender_mobile' => $user->mobile ?? '',
@@ -496,8 +533,20 @@ class PMDashboardController extends Controller
                         'status' => 'accept', // PM uploads are auto-accepted
                     ]);
 
+                    $totalAmount += floatval($item['item_value'] ?? 0);
                     $itemsCreated++;
                 }
+
+                // Create single Receipt for the entire bulk upload
+                $receipt = Receipt::create([
+                    'item_quantity' => $itemsCreated,
+                    'item_bulk_id' => $itemBulk->id,
+                    'amount' => $totalAmount, // Total amount of all items
+                    'payment_type' => 'cash',
+                    'created_by' => $user->id,
+                    'location_id' => $originLocationId,
+                    'passcode' => $this->generatePasscode()
+                ]);
                 fclose($handle);
             }
 
@@ -521,8 +570,218 @@ class PMDashboardController extends Controller
         }
     }
 
+    public function acceptAllUpload($uploadId)
+    {
+        DB::beginTransaction();
+        try {
+            $temporaryUpload = TemporaryUpload::findOrFail($uploadId);
+            
+            // Get all pending items with barcodes from this upload
+            $pendingItems = TemporaryUploadAssociate::where('temporary_id', $temporaryUpload->id)
+                ->where('status', 'pending')
+                ->whereNotNull('barcode')
+                ->where('barcode', '!=', '')
+                ->get();
+
+            if ($pendingItems->isEmpty()) {
+                return back()->with('warning', 'No pending items with barcodes found to accept.');
+            }
+
+            $currentUser = Auth::guard('pm')->user();
+            $acceptedCount = 0;
+
+            // ALWAYS create NEW ItemBulk for each acceptance session
+            // This ensures proper sequential ItemBulk IDs and no reuse of old records
+            // PRESERVE ORIGINAL CATEGORY from the temporary upload
+            $itemBulk = ItemBulk::create([
+                'sender_name' => $temporaryUpload->user->name,
+                'service_type' => $pendingItems->first()->service_type ?? 'register_post',
+                'location_id' => $temporaryUpload->location_id,
+                'created_by' => $currentUser->id,
+                'category' => $temporaryUpload->category, // FIXED: Use original category instead of hardcoded 'temporary_list'
+                'item_quantity' => $pendingItems->count(),
+            ]);
+
+            foreach ($pendingItems as $tempItem) {
+                // Create item in items table
+                $item = Item::create([
+                    'item_bulk_id' => $itemBulk->id,
+                    'barcode' => $tempItem->barcode,
+                    'receiver_name' => $tempItem->receiver_name,
+                    'receiver_address' => $tempItem->receiver_address,
+                    'status' => 'accept',
+                    'weight' => $tempItem->weight,
+                    'amount' => $tempItem->service_type === 'cod' ? $tempItem->amount : 0.00,
+                    'created_by' => $currentUser->id,
+                    'updated_by' => $currentUser->id,
+                ]);
+
+                // Create Payment record for COD items
+                if ($tempItem->service_type === 'cod' && $tempItem->amount > 0) {
+                    Payment::create([
+                        'item_id' => $item->id,
+                        'fixed_amount' => $tempItem->amount,
+                        'commission' => $tempItem->commission ?? 0.00,
+                        'item_value' => $tempItem->item_value ?? $tempItem->amount,
+                        'status' => 'accept',
+                    ]);
+                }
+
+                // Create SMS notification for accepted item
+                SmsSent::create([
+                    'item_id' => $item->id,
+                    'sender_mobile' => $temporaryUpload->user->mobile ?? '',
+                    'receiver_mobile' => $tempItem->contact_number ?? '',
+                    'status' => 'accept',
+                ]);
+
+                // Update the temporary upload associate status
+                $tempItem->update(['status' => 'accept']);
+
+                $acceptedCount++;
+            }
+
+            // Create receipt for accepted items if COD service
+            $codItems = $itemBulk->items()->where('amount', '>', 0)->get();
+            if ($codItems->count() > 0) {
+                $totalAmount = $codItems->sum('amount');
+                
+                Receipt::create([
+                    'item_quantity' => $codItems->count(),
+                    'item_bulk_id' => $itemBulk->id,
+                    'amount' => $totalAmount,
+                    'payment_type' => 'cash',
+                    'passcode' => $this->generatePasscode(),
+                    'created_by' => $currentUser->id,
+                    'location_id' => $temporaryUpload->location_id,
+                ]);
+            }
+
+            DB::commit();
+
+            return back()->with('success', "Successfully accepted {$acceptedCount} items from upload #{$temporaryUpload->id} into ItemBulk #{$itemBulk->id}. " . 
+                                         ($codItems->count() > 0 ? "Receipt created for COD items." : ""));
+
+        } catch (\Exception $e) {
+            DB::rollback();
+            return back()->withErrors(['error' => 'Error accepting items: ' . $e->getMessage()]);
+        }
+    }
+
+    public function acceptSelectedUpload(Request $request, $uploadId)
+    {
+        $request->validate([
+            'selected_items' => 'required|array|min:1',
+            'selected_items.*' => 'integer|exists:temporary_upload_associates,id'
+        ]);
+
+        DB::beginTransaction();
+        try {
+            $temporaryUpload = TemporaryUpload::findOrFail($uploadId);
+            
+            // Get selected pending items with barcodes from this upload
+            $selectedItems = TemporaryUploadAssociate::where('temporary_id', $temporaryUpload->id)
+                ->whereIn('id', $request->selected_items)
+                ->where('status', 'pending')
+                ->whereNotNull('barcode')
+                ->where('barcode', '!=', '')
+                ->get();
+
+            if ($selectedItems->isEmpty()) {
+                return back()->with('warning', 'No valid items selected for acceptance.');
+            }
+
+            $currentUser = Auth::guard('pm')->user();
+            $acceptedCount = 0;
+
+            // ALWAYS create NEW ItemBulk for each acceptance session
+            // This ensures proper sequential ItemBulk IDs and no reuse of old records
+            // PRESERVE ORIGINAL CATEGORY from the temporary upload
+            $itemBulk = ItemBulk::create([
+                'sender_name' => $temporaryUpload->user->name,
+                'service_type' => $selectedItems->first()->service_type ?? 'register_post',
+                'location_id' => $temporaryUpload->location_id,
+                'created_by' => $currentUser->id,
+                'category' => $temporaryUpload->category, // FIXED: Use original category instead of hardcoded 'temporary_list'
+                'item_quantity' => $selectedItems->count(),
+            ]);
+
+            foreach ($selectedItems as $tempItem) {
+                // Create item in items table
+                $item = Item::create([
+                    'item_bulk_id' => $itemBulk->id,
+                    'barcode' => $tempItem->barcode,
+                    'receiver_name' => $tempItem->receiver_name,
+                    'receiver_address' => $tempItem->receiver_address,
+                    'status' => 'accept',
+                    'weight' => $tempItem->weight,
+                    'amount' => $tempItem->service_type === 'cod' ? $tempItem->amount : 0.00,
+                    'created_by' => $currentUser->id,
+                    'updated_by' => $currentUser->id,
+                ]);
+
+                // Create Payment record for COD items
+                if ($tempItem->service_type === 'cod' && $tempItem->amount > 0) {
+                    Payment::create([
+                        'item_id' => $item->id,
+                        'fixed_amount' => $tempItem->amount,
+                        'commission' => $tempItem->commission ?? 0.00,
+                        'item_value' => $tempItem->item_value ?? $tempItem->amount,
+                        'status' => 'accept',
+                    ]);
+                }
+
+                // Create SMS notification for accepted item
+                SmsSent::create([
+                    'item_id' => $item->id,
+                    'sender_mobile' => $temporaryUpload->user->mobile ?? '',
+                    'receiver_mobile' => $tempItem->contact_number ?? '',
+                    'status' => 'accept',
+                ]);
+
+                // Update the temporary upload associate status
+                $tempItem->update(['status' => 'accept']);
+
+                $acceptedCount++;
+            }
+
+            // Create receipt for accepted items if COD service
+            $codItems = $itemBulk->items()->where('amount', '>', 0)->get();
+            if ($codItems->count() > 0) {
+                $totalAmount = $codItems->sum('amount');
+                
+                Receipt::create([
+                    'item_quantity' => $codItems->count(),
+                    'item_bulk_id' => $itemBulk->id,
+                    'amount' => $totalAmount,
+                    'payment_type' => 'cash',
+                    'passcode' => $this->generatePasscode(),
+                    'created_by' => $currentUser->id,
+                    'location_id' => $temporaryUpload->location_id,
+                ]);
+            }
+
+            DB::commit();
+
+            return back()->with('success', "Successfully accepted {$acceptedCount} selected items from upload #{$temporaryUpload->id} into ItemBulk #{$itemBulk->id}. " . 
+                                         ($codItems->count() > 0 ? "Receipt created for COD items." : ""));
+
+        } catch (\Exception $e) {
+            DB::rollback();
+            return back()->withErrors(['error' => 'Error accepting selected items: ' . $e->getMessage()]);
+        }
+    }
+
     public function showBulkUploadTemplate()
     {
         return response()->download(public_path('templates/pm-bulk-upload-template.csv'));
+    }
+
+    /**
+     * Generate a 6-digit passcode for receipts
+     */
+    private function generatePasscode()
+    {
+        return str_pad(rand(0, 999999), 6, '0', STR_PAD_LEFT);
     }
 }

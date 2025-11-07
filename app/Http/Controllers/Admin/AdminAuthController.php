@@ -42,7 +42,7 @@ class AdminAuthController extends Controller
             ]);
         }
 
-        Auth::login($user);
+        Auth::guard('admin')->login($user);
         $request->session()->regenerate();
 
         return redirect()->intended(route('admin.dashboard'));
@@ -75,7 +75,7 @@ class AdminAuthController extends Controller
             'is_active' => true,
         ]);
 
-        Auth::login($user);
+        Auth::guard('admin')->login($user);
 
         if ($user->isAdmin()) {
             return redirect()->route('admin.dashboard');
@@ -86,7 +86,7 @@ class AdminAuthController extends Controller
 
     public function logout(Request $request)
     {
-        Auth::logout();
+        Auth::guard('admin')->logout();
         $request->session()->invalidate();
         $request->session()->regenerateToken();
 

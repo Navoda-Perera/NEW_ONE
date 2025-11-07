@@ -3,6 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="csrf-token" content="{{ csrf_token() }}">
     <title>Admin Login - Multi-Auth System</title>
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
     <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.0/font/bootstrap-icons.css" rel="stylesheet">
@@ -64,6 +65,17 @@
                                 @foreach ($errors->all() as $error)
                                     {{ $error }}
                                 @endforeach
+                            </div>
+                        @endif
+
+                        @if(config('app.debug'))
+                            <div class="alert alert-info border-0 rounded-3 mb-3">
+                                <small>
+                                    <strong>Debug Info:</strong><br>
+                                    CSRF Token: {{ csrf_token() }}<br>
+                                    Session ID: {{ session()->getId() }}<br>
+                                    Route: {{ route('admin.login.post') }}
+                                </small>
                             </div>
                         @endif
 

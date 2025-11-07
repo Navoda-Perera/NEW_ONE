@@ -57,6 +57,8 @@
                                             <span class="badge bg-danger">Admin</span>
                                         @elseif($user->role === 'pm')
                                             <span class="badge bg-warning">Postmaster</span>
+                                        @elseif($user->role === 'postman')
+                                            <span class="badge bg-success">Postman</span>
                                         @else
                                             <span class="badge bg-info">Customer</span>
                                         @endif

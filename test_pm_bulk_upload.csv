@@ -1,0 +1,6 @@
+receiver_name,receiver_address,item_value,weight,postage,barcode,contact_number,sender_name,notes
+John Doe,123 Main Street Colombo 07,2500.00,500,,JD001,0771234567,Test Company,Fragile item
+Jane Smith,456 Kandy Road Kandy,1500.00,300,,JS002,0772345678,Test Company,Express delivery
+Bob Wilson,789 Galle Road Galle,3000.00,750,,BW003,0773456789,Test Company,Handle with care
+Alice Johnson,321 Jaffna Road Jaffna,2000.00,400,,AJ004,0774567890,Test Company,Regular delivery
+Mike Brown,654 Matara Road Matara,1800.00,350,,MB005,0775678901,Test Company,Priority item

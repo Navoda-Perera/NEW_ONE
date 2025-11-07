@@ -3,7 +3,7 @@
 <head>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
-    <title>{{ config('app.name', 'Laravel') }} - Multi-User Portal</title>
+    <title>SL POST COURIER SYSTEM</title>
 
     <!-- Bootstrap CSS -->
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
@@ -16,8 +16,8 @@
                 <div class="col-md-10 col-lg-8">
                     <!-- Main Header -->
                     <div class="text-center mb-5">
-                        <h1 class="display-4 fw-bold text-primary mb-3">{{ config('app.name', 'Laravel') }}</h1>
-                        <p class="lead text-muted">Multi-User Authentication System</p>
+                        <h1 class="display-4 fw-bold text-primary mb-3">SRI LANKA POST</h1>
+                        <p class="lead text-muted">SL POST COURIER SYSTEM</p>
                         <p class="text-muted">Choose your portal to continue</p>
                     </div>
 

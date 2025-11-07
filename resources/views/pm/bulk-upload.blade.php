@@ -267,7 +267,6 @@ const serviceTypeConfigs = {
             { name: 'barcode', label: 'Barcode - Optional', required: false, example: 'REG1234567' },
             { name: 'contact_number', label: 'Receiver Contact Number', required: true, example: '0771234567' },
             { name: 'sender_name', label: 'Sender Name - Optional', required: false, example: 'ABC Company' },
-            { name: 'notes', label: 'Additional Notes', required: false, example: 'Handle with care' }
         ],
         sampleData: [
             {
@@ -279,7 +278,6 @@ const serviceTypeConfigs = {
                 barcode: 'REG1234567',
                 contact_number: '0771234567',
                 sender_name: 'ABC Company',
-                notes: 'Handle with care'
             },
             {
                 receiver_name: 'Jane Smith',
@@ -290,7 +288,6 @@ const serviceTypeConfigs = {
                 barcode: 'REG1234568',
                 contact_number: '0753456789',
                 sender_name: 'XYZ Store',
-                notes: 'Fragile item'
             }
         ]
     },
@@ -305,7 +302,6 @@ const serviceTypeConfigs = {
             { name: 'barcode', label: 'Barcode - Optional', required: false, example: 'SLP1234567' },
             { name: 'contact_number', label: 'Receiver Contact Number', required: true, example: '0912234567' },
             { name: 'sender_name', label: 'Sender Name - Optional', required: false, example: 'Online Shop' },
-            { name: 'notes', label: 'Additional Notes', required: false, example: 'Express delivery' }
         ],
         sampleData: [
             {
@@ -317,7 +313,6 @@ const serviceTypeConfigs = {
                 barcode: 'SLP1234567',
                 contact_number: '0912234567',
                 sender_name: 'Online Shop',
-                notes: 'Express delivery'
             },
             {
                 receiver_name: 'Bob Wilson',
@@ -328,7 +323,6 @@ const serviceTypeConfigs = {
                 barcode: 'SLP1234568',
                 contact_number: '0522345678',
                 sender_name: 'Tech Store',
-                notes: 'Electronics - handle carefully'
             }
         ]
     },
@@ -345,7 +339,6 @@ const serviceTypeConfigs = {
             { name: 'sender_name', label: 'Sender Name - Optional', required: false, example: 'E-commerce Store' },
             { name: 'cod_amount', label: 'COD Collection Amount (LKR)', required: false, example: '5000.00' },
             { name: 'payment_method', label: 'Payment Method (cash/card)', required: false, example: 'cash' },
-            { name: 'notes', label: 'Additional Notes', required: false, example: 'COD payment required' }
         ],
         sampleData: [
             {
@@ -359,7 +352,6 @@ const serviceTypeConfigs = {
                 sender_name: 'E-commerce Store',
                 cod_amount: '5000.00',
                 payment_method: 'cash',
-                notes: 'COD payment required'
             },
             {
                 receiver_name: 'David Lee',
@@ -372,7 +364,6 @@ const serviceTypeConfigs = {
                 sender_name: 'Fashion Store',
                 cod_amount: '3500.00',
                 payment_method: 'card',
-                notes: 'Business delivery'
             }
         ]
     }

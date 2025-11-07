@@ -73,6 +73,7 @@
                                 <option value="">Select Role</option>
                                 <option value="admin" {{ old('role') === 'admin' ? 'selected' : '' }}>Admin</option>
                                 <option value="pm" {{ old('role') === 'pm' ? 'selected' : '' }}>Postmaster</option>
+                                <option value="postman" {{ old('role') === 'postman' ? 'selected' : '' }}>Postman</option>
                             </select>
                             @error('role')
                                 <div class="invalid-feedback">
@@ -80,7 +81,7 @@
                                 </div>
                             @enderror
                             <div class="form-text">
-                                <small class="text-muted">Only Admin and Postmaster roles can be created through this form.</small>
+                                <small class="text-muted">Admin, Postmaster, and Postman roles can be created through this form.</small>
                             </div>
                         </div>
 
@@ -101,7 +102,7 @@
                                 </div>
                             @enderror
                             <div class="form-text">
-                                <small class="text-muted">Postmasters must be assigned to a post office location.</small>
+                                <small class="text-muted">Postmasters and Postmen must be assigned to a post office location.</small>
                             </div>
                         </div>
 
@@ -151,7 +152,7 @@ function toggleLocationField() {
     const locationField = document.getElementById('location-field');
     const locationSelect = document.getElementById('location_id');
 
-    if (roleSelect.value === 'pm') {
+    if (roleSelect.value === 'pm' || roleSelect.value === 'postman') {
         locationField.style.display = 'block';
         locationSelect.required = true;
     } else {

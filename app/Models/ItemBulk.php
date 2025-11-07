@@ -41,6 +41,11 @@ class ItemBulk extends Model
         return $this->hasMany(Item::class, 'item_bulk_id');
     }
 
+    public function receipts()
+    {
+        return $this->hasMany(Receipt::class, 'item_bulk_id');
+    }
+
     // Scopes for category enum
     public function scopeSingleItem($query)
     {

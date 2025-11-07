@@ -108,7 +108,7 @@
             <div class="d-flex justify-content-between align-items-center mb-4 p-3">
                 <h2 class="fw-bold text-dark mb-0">
                     <i class="bi bi-briefcase"></i> Postmaster Dashboard
-                    <br><small class="text-muted">Welcome, {{ auth()->user()->name }}</small>
+                    <br><small class="text-muted">Welcome, {{ auth('pm')->user()->name }}</small>
                 </h2>
                 @include('pm.partials.location-info')
             </div>

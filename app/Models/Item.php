@@ -78,6 +78,11 @@ class Item extends Model
         return $this->hasMany(Withdraw::class);
     }
 
+    public function temporaryUploadAssociate()
+    {
+        return $this->hasOne(TemporaryUploadAssociate::class, 'barcode', 'barcode');
+    }
+
     // Scopes
     public function scopeAccepted($query)
     {

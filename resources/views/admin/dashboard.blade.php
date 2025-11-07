@@ -21,7 +21,7 @@
         <div class="col-md-12">
             <h2 class="mb-4">
                 <i class="bi bi-speedometer2"></i> Admin Dashboard
-                <small class="text-muted">Welcome, {{ auth()->user()->name }}</small>
+                <small class="text-muted">Welcome, {{ auth('admin')->user()->name }}</small>
             </h2>
         </div>
     </div>
@@ -76,6 +76,24 @@
         </div>
 
         <div class="col-md-3">
+            <div class="card bg-secondary text-white">
+                <div class="card-body">
+                    <div class="d-flex justify-content-between">
+                        <div>
+                            <h4>{{ $postmanUsers }}</h4>
+                            <p class="mb-0">Postmen</p>
+                        </div>
+                        <div class="align-self-center">
+                            <i class="bi bi-truck fs-1"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="row mt-3">
+        <div class="col-md-3">
             <div class="card bg-warning text-white">
                 <div class="card-body">
                     <div class="d-flex justify-content-between">
@@ -85,6 +103,38 @@
                         </div>
                         <div class="align-self-center">
                             <i class="bi bi-person-badge fs-1"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-md-3">
+            <div class="card bg-light text-dark">
+                <div class="card-body">
+                    <div class="d-flex justify-content-between">
+                        <div>
+                            <h4>{{ $internalUsers }}</h4>
+                            <p class="mb-0">Internal Users</p>
+                        </div>
+                        <div class="align-self-center">
+                            <i class="bi bi-building fs-1"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-md-3">
+            <div class="card bg-dark text-white">
+                <div class="card-body">
+                    <div class="d-flex justify-content-between">
+                        <div>
+                            <h4>{{ $externalUsers }}</h4>
+                            <p class="mb-0">External Users</p>
+                        </div>
+                        <div class="align-self-center">
+                            <i class="bi bi-globe fs-1"></i>
                         </div>
                     </div>
                 </div>

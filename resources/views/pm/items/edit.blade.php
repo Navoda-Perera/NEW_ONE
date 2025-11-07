@@ -1,6 +1,6 @@
 @extends('layouts.app')
 
-@section('title', 'Review & Edit Item')
+@section('title', 'Update Item Details')
 
 @section('nav-links')
     <li class="nav-item">
@@ -39,10 +39,10 @@
                     <a href="{{ route('pm.dashboard') }}" class="btn btn-outline-secondary me-3">
                         <i class="bi bi-arrow-left"></i> Back to Dashboard
                     </a>
-                    <h2 class="fw-bold text-dark mb-0 d-inline">Review & Edit Item Details</h2>
+                    <h2 class="fw-bold text-dark mb-0 d-inline">Update Item Details</h2>
                 </div>
                 <div>
-                    <span class="badge bg-info fs-6">PM Review Required</span>
+                    <span class="badge bg-warning fs-6">Update Only - Accept Later</span>
                 </div>
             </div>
         </div>
@@ -55,7 +55,7 @@
                     <h5 class="mb-0"><i class="bi bi-pencil-square me-2"></i>Item Details</h5>
                 </div>
                 <div class="card-body">
-                    <form method="POST" action="{{ route('pm.items.accept-with-updates', $item->id) }}" id="itemEditForm">
+                    <form method="POST" action="{{ route('pm.items.update-only', $item->id) }}" id="itemEditForm">
                         @csrf
 
                         @if(!$item->barcode)
@@ -258,9 +258,9 @@
                                         onclick="rejectItem({{ $item->id }})">
                                     <i class="bi bi-x-circle me-1"></i>Reject Item
                                 </button>
-                                <button type="submit" class="btn btn-success" id="acceptBtn"
+                                <button type="submit" class="btn btn-primary" id="updateBtn"
                                         @if(!$item->barcode) disabled @endif>
-                                    <i class="bi bi-check-circle me-1"></i>Accept & Process Item
+                                    <i class="bi bi-pencil-square me-1"></i>Update Item Details
                                 </button>
                             </div>
                         </div>
@@ -273,29 +273,28 @@
         <div class="col-md-4">
             <div class="card">
                 <div class="card-header">
-                    <h6 class="mb-0"><i class="bi bi-info-circle me-2"></i>PM Review Checklist</h6>
+                    <h6 class="mb-0"><i class="bi bi-info-circle me-2"></i>Update Workflow</h6>
                 </div>
                 <div class="card-body">
                     <div class="list-group list-group-flush">
                         <div class="list-group-item border-0 px-0">
-                            <i class="bi bi-check-square text-primary me-2"></i>
-                            <strong>Verify Weight:</strong> Check actual weight against customer entry
+                            <i class="bi bi-1-circle text-primary me-2"></i>
+                            <strong>Step 1:</strong> Update item details and assign barcode
                         </div>
                         <div class="list-group-item border-0 px-0">
-                            <i class="bi bi-check-square text-primary me-2"></i>
-                            <strong>Check Details:</strong> Verify receiver name and address
+                            <i class="bi bi-2-circle text-warning me-2"></i>
+                            <strong>Step 2:</strong> Click "Update Item Details" to save changes
                         </div>
                         <div class="list-group-item border-0 px-0">
-                            <i class="bi bi-check-square text-primary me-2"></i>
-                            <strong>Confirm Amounts:</strong> Verify amount and item value
+                            <i class="bi bi-3-circle text-success me-2"></i>
+                            <strong>Step 3:</strong> Use Accept buttons in list view to process to database
                         </div>
-                        <div class="list-group-item border-0 px-0">
-                            <i class="bi bi-check-square text-primary me-2"></i>
-                            <strong>Assign Barcode:</strong> Scan or manually enter unique barcode
-                        </div>
-                        <div class="list-group-item border-0 px-0">
-                            <i class="bi bi-check-square text-primary me-2"></i>
-                            <strong>Process:</strong> Accept to move to items table or reject if issues
+                        <div class="list-group-item border-0 px-0 mt-2">
+                            <div class="alert alert-info small mb-0">
+                                <i class="bi bi-info-circle me-1"></i>
+                                <strong>Note:</strong> This page only updates temporary data. 
+                                Final acceptance happens in the upload list view.
+                            </div>
                         </div>
                     </div>
                 </div>

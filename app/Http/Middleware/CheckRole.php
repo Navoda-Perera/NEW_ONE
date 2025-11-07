@@ -18,14 +18,26 @@ class CheckRole
      */
     public function handle(Request $request, Closure $next, ...$roles): Response
     {
-        // Check if user is authenticated
-        if (!Auth::check()) {
-            // Determine the correct login route based on the request path
-            if ($request->is('admin/*')) {
+        // Determine the appropriate guard based on the request path
+        $guard = 'web'; // Default guard
+        if ($request->is('admin/*')) {
+            $guard = 'admin';
+        } elseif ($request->is('pm/*')) {
+            $guard = 'pm';
+        } elseif ($request->is('postman/*')) {
+            $guard = 'postman';
+        } elseif ($request->is('customer/*')) {
+            $guard = 'customer';
+        }
+
+        // Check if user is authenticated with the appropriate guard
+        if (!Auth::guard($guard)->check()) {
+            // Determine the correct login route based on the guard
+            if ($guard === 'admin') {
                 return redirect()->route('admin.login')->with('info', 'Please login to access admin area.');
-            } elseif ($request->is('pm/*')) {
+            } elseif ($guard === 'pm') {
                 return redirect()->route('pm.login')->with('info', 'Please login to access PM area.');
-            } elseif ($request->is('customer/*')) {
+            } elseif ($guard === 'customer') {
                 return redirect()->route('customer.login')->with('info', 'Please login to access customer area.');
             } else {
                 // Default to admin login for root paths
@@ -33,25 +45,25 @@ class CheckRole
             }
         }
 
-        $user = Auth::user();
+        $user = Auth::guard($guard)->user();
 
         // Check if user exists
         if (!$user) {
-            Auth::logout();
-            if ($request->is('pm/*')) {
+            Auth::guard($guard)->logout();
+            if ($guard === 'pm') {
                 return redirect()->route('pm.login')->with('error', 'Session expired. Please login again.');
             }
             return redirect()->route('admin.login');
         }
 
         if (!$user->is_active) {
-            Auth::logout();
-            // Determine the correct login route based on the request path
-            if ($request->is('admin/*')) {
+            Auth::guard($guard)->logout();
+            // Determine the correct login route based on the guard
+            if ($guard === 'admin') {
                 return redirect()->route('admin.login')->with('error', 'Your account has been deactivated.');
-            } elseif ($request->is('pm/*')) {
+            } elseif ($guard === 'pm') {
                 return redirect()->route('pm.login')->with('error', 'Your account has been deactivated.');
-            } elseif ($request->is('customer/*')) {
+            } elseif ($guard === 'customer') {
                 return redirect()->route('customer.login')->with('error', 'Your account has been deactivated.');
             } else {
                 return redirect()->route('admin.login')->with('error', 'Your account has been deactivated.');

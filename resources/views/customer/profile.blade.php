@@ -28,7 +28,7 @@
                         <div class="mb-3">
                             <label for="name" class="form-label fw-semibold">Name</label>
                             <input id="name" type="text" class="form-control @error('name') is-invalid @enderror"
-                                   name="name" value="{{ old('name', auth()->user()->name) }}" required>
+                                   name="name" value="{{ old('name', auth('customer')->user()->name) }}" required>
                             @error('name')
                                 <div class="invalid-feedback">
                                     {{ $message }}
@@ -39,7 +39,7 @@
                         <div class="mb-3">
                             <label for="nic" class="form-label fw-semibold">NIC Number</label>
                             <input id="nic" type="text" class="form-control @error('nic') is-invalid @enderror"
-                                   name="nic" value="{{ old('nic', auth()->user()->nic) }}" required>
+                                   name="nic" value="{{ old('nic', auth('customer')->user()->nic) }}" required>
                             @error('nic')
                                 <div class="invalid-feedback">
                                     {{ $message }}
@@ -50,7 +50,7 @@
                         <div class="mb-3">
                             <label for="email" class="form-label fw-semibold">Email Address (Optional)</label>
                             <input id="email" type="email" class="form-control @error('email') is-invalid @enderror"
-                                   name="email" value="{{ old('email', auth()->user()->email) }}">
+                                   name="email" value="{{ old('email', auth('customer')->user()->email) }}">
                             @error('email')
                                 <div class="invalid-feedback">
                                     {{ $message }}
@@ -60,18 +60,18 @@
 
                         <div class="mb-3">
                             <label class="form-label fw-semibold">User Type</label>
-                            <input type="text" class="form-control" value="{{ ucfirst(auth()->user()->user_type) }}" readonly>
+                            <input type="text" class="form-control" value="{{ ucfirst(auth('customer')->user()->user_type) }}" readonly>
                         </div>
 
                         <div class="mb-3">
                             <label class="form-label fw-semibold">Role</label>
-                            <input type="text" class="form-control" value="{{ ucfirst(auth()->user()->role) }}" readonly>
+                            <input type="text" class="form-control" value="{{ ucfirst(auth('customer')->user()->role) }}" readonly>
                         </div>
 
                         <div class="mb-3">
                             <label class="form-label fw-semibold">Account Status</label>
                             <div>
-                                @if(auth()->user()->is_active)
+                                @if(auth('customer')->user()->is_active)
                                     <span class="badge bg-success fs-6">Active</span>
                                 @else
                                     <span class="badge bg-danger fs-6">Inactive</span>
@@ -81,7 +81,7 @@
 
                         <div class="mb-3">
                             <label class="form-label fw-semibold">Member Since</label>
-                            <input type="text" class="form-control" value="{{ auth()->user()->created_at->format('F j, Y') }}" readonly>
+                            <input type="text" class="form-control" value="{{ auth('customer')->user()->created_at->format('F j, Y') }}" readonly>
                         </div>
 
                         <button type="submit" class="btn btn-primary">

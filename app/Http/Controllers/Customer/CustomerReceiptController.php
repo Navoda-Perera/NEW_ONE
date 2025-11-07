@@ -12,7 +12,7 @@ class CustomerReceiptController extends Controller
 {
     public function index()
     {
-        $user = Auth::user();
+        $user = Auth::guard('customer')->user();
 
         // Get receipts for items created by this customer or sent to this customer
         // Also include receipts for items originally submitted by customer through temporary uploads
@@ -56,7 +56,7 @@ class CustomerReceiptController extends Controller
         return view('customer.receipts.index', compact('receipts', 'totalReceipts', 'totalItems'));
     }    public function show($id)
     {
-        $user = Auth::user();
+        $user = Auth::guard('customer')->user();
 
         $receipt = Receipt::with([
             'itemBulk.creator.location',
@@ -81,7 +81,7 @@ class CustomerReceiptController extends Controller
 
     public function download($id)
     {
-        $user = Auth::user();
+        $user = Auth::guard('customer')->user();
 
         $receipt = Receipt::with([
             'itemBulk.creator.location',
@@ -110,7 +110,7 @@ class CustomerReceiptController extends Controller
             'barcode' => 'required|string'
         ]);
 
-        $user = Auth::user();
+        $user = Auth::guard('customer')->user();
         $barcode = $request->barcode;
 
         $receipt = Receipt::with([

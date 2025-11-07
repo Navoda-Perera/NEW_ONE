@@ -49,23 +49,18 @@ class PMAuthController extends Controller
             ])->onlyInput('nic');
         }
 
-        // Clear any existing session data
-        $request->session()->flush();
+        // Use PM guard for authentication
+        Auth::guard('pm')->login($user, $request->filled('remember'));
 
         // Regenerate session ID for security
         $request->session()->regenerate();
-
-        // Login the user with remember me option
-        Auth::login($user, $request->filled('remember'));
-
-        // Force session save to ensure persistence
-        $request->session()->save();
 
         // Log successful login for debugging
         Log::info('PM user logged in successfully', [
             'user_id' => $user->id,
             'user_name' => $user->name,
-            'session_id' => $request->session()->getId()
+            'session_id' => $request->session()->getId(),
+            'guard' => 'pm'
         ]);
 
         return redirect()->intended(route('pm.dashboard'))
@@ -77,11 +72,11 @@ class PMAuthController extends Controller
      */
     public function logout(Request $request)
     {
-        Auth::logout();
+        Auth::guard('pm')->logout();
 
         $request->session()->invalidate();
         $request->session()->regenerateToken();
 
-        return redirect()->route('pm.login');
+        return redirect('/pm/login');
     }
 }

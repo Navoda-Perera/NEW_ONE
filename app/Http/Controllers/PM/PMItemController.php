@@ -10,6 +10,7 @@ use App\Models\User;
 use App\Models\Location;
 use App\Models\SmsSent;
 use App\Models\Receipt;
+use App\Models\Payment;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Log;
@@ -21,10 +22,10 @@ class PMItemController extends Controller
     {
         Log::info('PMItemController@pending accessed by user', [
             'user_id' => Auth::id(),
-            'user_role' => Auth::user()->role
+            'user_role' => Auth::guard('pm')->user()->role
         ]);
 
-        $currentUser = Auth::user();
+        $currentUser = Auth::guard('pm')->user();
         $searchTerm = $request->get('search');
 
         // Get pending items for the current PM's location
@@ -69,7 +70,7 @@ class PMItemController extends Controller
             abort(404, 'Invalid service type');
         }
 
-        $currentUser = Auth::user();
+        $currentUser = Auth::guard('pm')->user();
         $searchTerm = $request->get('search');
 
         // Get pending items filtered by service type from TemporaryUploadAssociate table
@@ -122,7 +123,7 @@ class PMItemController extends Controller
         $item = TemporaryUploadAssociate::findOrFail($id);
 
         // Verify this item belongs to the PM's location
-        $currentUser = Auth::user();
+        $currentUser = Auth::guard('pm')->user();
         if ($item->temporaryUpload->location_id !== $currentUser->location_id) {
             abort(403, 'Unauthorized access to this item.');
         }
@@ -212,31 +213,16 @@ class PMItemController extends Controller
         $temporaryUpload = $item->temporaryUpload;
 
         if ($temporaryUpload->category === 'temporary_list') {
-            // Look for existing ItemBulk for this temporary upload
-            $existingItemBulk = ItemBulk::where('sender_name', $temporaryUpload->user->name)
-                ->where('location_id', $temporaryUpload->location_id)
-                ->where('category', 'temporary_list')
-                ->whereHas('items', function($query) use ($temporaryUpload) {
-                    // Check if any items from this temporary upload already exist
-                    $query->whereIn('created_by', [$temporaryUpload->user_id]);
-                })
-                ->first();
-
-            if (!$existingItemBulk) {
-                // Create new ItemBulk for this temporary upload
-                $itemBulk = ItemBulk::create([
-                    'sender_name' => $temporaryUpload->user->name,
-                    'service_type' => $item->service_type ?? 'register_post',
-                    'location_id' => $temporaryUpload->location_id,
-                    'created_by' => $currentUser->id,
-                    'category' => 'temporary_list',
-                    'item_quantity' => 1, // Will be updated as more items are added
-                ]);
-            } else {
-                $itemBulk = $existingItemBulk;
-                // Update item quantity
-                $itemBulk->increment('item_quantity');
-            }
+            // ALWAYS create new ItemBulk for customer upload acceptance
+            // This ensures proper sequential ItemBulk IDs and prevents reuse of old records
+            $itemBulk = ItemBulk::create([
+                'sender_name' => $temporaryUpload->user->name,
+                'service_type' => $item->service_type ?? 'register_post',
+                'location_id' => $temporaryUpload->location_id,
+                'created_by' => $currentUser->id,
+                'category' => 'temporary_list',
+                'item_quantity' => 1,
+            ]);
         } else {
             // Single item - create individual ItemBulk
             $itemBulk = ItemBulk::create([
@@ -261,6 +247,17 @@ class PMItemController extends Controller
             'created_by' => $temporaryUpload->user_id, // Original customer
             'updated_by' => $currentUser->id, // PM who accepted
         ]);
+
+        // Create Payment record for COD items
+        if ($item->service_type === 'cod' && ($item->amount ?? 0) > 0) {
+            Payment::create([
+                'item_id' => $newItem->id,
+                'fixed_amount' => $item->amount,
+                'commission' => $item->commission ?? 0.00,
+                'item_value' => $item->item_value ?? $item->amount,
+                'status' => 'accept',
+            ]);
+        }
 
         // Log SMS notification for acceptance
         SmsSent::create([
@@ -415,7 +412,7 @@ class PMItemController extends Controller
         $item = TemporaryUploadAssociate::findOrFail($id);
 
         // Verify this item belongs to the PM's location
-        $currentUser = Auth::user();
+        $currentUser = Auth::guard('pm')->user();
         if ($item->temporaryUpload->location_id !== $currentUser->location_id) {
             abort(403, 'Unauthorized access to this item.');
         }
@@ -442,7 +439,7 @@ class PMItemController extends Controller
         $item = TemporaryUploadAssociate::findOrFail($id);
 
         // Verify this item belongs to the PM's location
-        $currentUser = Auth::user();
+        $currentUser = Auth::guard('pm')->user();
         if ($item->temporaryUpload->location_id !== $currentUser->location_id) {
             return response()->json([
                 'success' => false,
@@ -482,6 +479,104 @@ class PMItemController extends Controller
         ]);
     }
 
+    /**
+     * Update temporary item data only - NO acceptance, NO database insertion
+     * After update, user must use Accept buttons in list view to process to database
+     */
+    public function updateOnly(Request $request, $id)
+    {
+        Log::info('PMItemController@updateOnly called', [
+            'user_id' => Auth::id(),
+            'item_id' => $id,
+            'weight' => $request->weight,
+            'barcode' => $request->barcode
+        ]);
+
+        // Validate the request
+        $rules = [
+            'weight' => 'required|numeric|min:0.01',
+            'receiver_name' => 'required|string|max:255',
+            'receiver_address' => 'required|string',
+            'contact_number' => 'nullable|string|max:15',
+            'amount' => 'required|numeric|min:0',
+            'barcode' => 'required|string|max:255'
+        ];
+
+        // Only validate item_value for COD services
+        $item = TemporaryUploadAssociate::findOrFail($id);
+        if ($item->service_type === 'cod') {
+            $rules['item_value'] = 'required|numeric|min:0';
+        } else {
+            $rules['item_value'] = 'nullable|numeric|min:0';
+        }
+
+        $request->validate($rules);
+
+        // Verify this item belongs to the PM's location
+        $currentUser = Auth::guard('pm')->user();
+        if ($item->temporaryUpload->location_id !== $currentUser->location_id) {
+            return back()->with('error', 'Unauthorized access to this item.');
+        }
+
+        DB::beginTransaction();
+        try {
+            // Update all editable fields in temporary_upload_associates table ONLY
+            $item->weight = $request->weight;
+            $item->receiver_name = $request->receiver_name;
+            $item->receiver_address = $request->receiver_address;
+            $item->contact_number = $request->contact_number;
+            $item->amount = $request->amount;
+
+            // Only update item_value for COD services, set to 0 for others
+            if ($item->service_type === 'cod') {
+                $item->item_value = $request->item_value ?? 0;
+            } else {
+                $item->item_value = 0;
+            }
+
+            // Only update barcode if it's different (in case PM set it earlier)
+            if ($item->barcode !== $request->barcode) {
+                // Check barcode uniqueness in temporary table
+                $existingBarcode = TemporaryUploadAssociate::where('barcode', $request->barcode)
+                    ->where('id', '!=', $id)
+                    ->first();
+
+                if ($existingBarcode) {
+                    DB::rollback();
+                    return back()->with('error', 'This barcode is already in use by another item.');
+                }
+
+                // Check barcode uniqueness in main items table
+                $existingItem = Item::where('barcode', $request->barcode)->first();
+                if ($existingItem) {
+                    DB::rollback();
+                    return back()->with('error', 'This barcode is already in use in the main system.');
+                }
+
+                $item->barcode = $request->barcode;
+            }
+
+            // ONLY save to temporary table - NO acceptance, NO database insertion
+            $item->save();
+
+            DB::commit();
+
+            // Redirect back to the customer upload list view where user can use Accept buttons
+            return redirect()->route('pm.view-customer-upload', $item->temporary_id)
+                ->with('success', 'Item details updated successfully! Use the Accept buttons below to process to database.');
+
+        } catch (\Exception $e) {
+            DB::rollback();
+            Log::error('Error updating item', [
+                'error' => $e->getMessage(),
+                'item_id' => $id,
+                'user_id' => Auth::id()
+            ]);
+
+            return back()->with('error', 'Error updating item: ' . $e->getMessage());
+        }
+    }
+
     public function acceptWithUpdates(Request $request, $id)
     {
         Log::info('PMItemController@acceptWithUpdates called', [
@@ -512,7 +607,7 @@ class PMItemController extends Controller
         $request->validate($rules);
 
         // Verify this item belongs to the PM's location
-        $currentUser = Auth::user();
+        $currentUser = Auth::guard('pm')->user();
         if ($item->temporaryUpload->location_id !== $currentUser->location_id) {
             return back()->with('error', 'Unauthorized access to this item.');
         }
@@ -592,7 +687,7 @@ class PMItemController extends Controller
             ->findOrFail($id);
 
         // Verify this item belongs to the PM's location
-        $currentUser = Auth::user();
+        $currentUser = Auth::guard('pm')->user();
         if ($item->temporaryUpload->location_id !== $currentUser->location_id) {
             abort(403, 'Unauthorized access to this item.');
         }
@@ -614,7 +709,7 @@ class PMItemController extends Controller
             'item_id' => $id
         ]);
 
-        $currentUser = Auth::user();
+        $currentUser = Auth::guard('pm')->user();
         $item = TemporaryUploadAssociate::with(['temporaryUpload.user', 'temporaryUpload.location'])
             ->findOrFail($id);
 
@@ -785,7 +880,7 @@ class PMItemController extends Controller
             'temporary_upload_id' => $temporaryUploadId
         ]);
 
-        $currentUser = Auth::user();
+        $currentUser = Auth::guard('pm')->user();
         $temporaryUpload = \App\Models\TemporaryUpload::with(['user', 'location', 'associates'])
             ->findOrFail($temporaryUploadId);
 
@@ -906,7 +1001,7 @@ class PMItemController extends Controller
             'barcode' => 'required|string'
         ]);
 
-        $currentUser = Auth::user();
+        $currentUser = Auth::guard('pm')->user();
         $barcode = trim($request->barcode);
 
         // Search in main items table
@@ -954,7 +1049,7 @@ class PMItemController extends Controller
      */
     public function editItem($id)
     {
-        $currentUser = Auth::user();
+        $currentUser = Auth::guard('pm')->user();
 
         $item = Item::with(['itemBulk', 'creator', 'updater'])
             ->whereHas('itemBulk', function ($query) use ($currentUser) {
@@ -978,7 +1073,7 @@ class PMItemController extends Controller
             'amount' => 'required|numeric|min:0'
         ]);
 
-        $currentUser = Auth::user();
+        $currentUser = Auth::guard('pm')->user();
 
         $item = Item::whereHas('itemBulk', function ($query) use ($currentUser) {
             $query->where('location_id', $currentUser->location_id);
@@ -1006,15 +1101,17 @@ class PMItemController extends Controller
     }
 
     /**
-     * Delete item
+     * Delete item - Updates item status to 'delete' and marks related records as deleted
+     * Does NOT permanently delete from database or change quantities
      */
     public function deleteItem($id)
     {
-        $currentUser = Auth::user();
+        $currentUser = Auth::guard('pm')->user();
 
-        $item = Item::whereHas('itemBulk', function ($query) use ($currentUser) {
-            $query->where('location_id', $currentUser->location_id);
-        })->findOrFail($id);
+        $item = Item::with(['itemBulk.receipts', 'payments', 'smsSents'])
+            ->whereHas('itemBulk', function ($query) use ($currentUser) {
+                $query->where('location_id', $currentUser->location_id);
+            })->findOrFail($id);
 
         // Check if item can be deleted (not dispatched or delivered)
         if (in_array($item->status, ['dispatched', 'delivered'])) {
@@ -1024,13 +1121,142 @@ class PMItemController extends Controller
             ]);
         }
 
-        $barcode = $item->barcode;
-        $item->delete();
+        DB::beginTransaction();
+        try {
+            $barcode = $item->barcode;
+            $itemBulk = $item->itemBulk;
+            $itemAmount = $item->amount;
 
-        return response()->json([
-            'success' => true,
-            'message' => 'Item with barcode ' . $barcode . ' deleted successfully'
-        ]);
+            // Find the related receipt
+            $receipt = $itemBulk->receipts()->where('dlt_status', false)->first();
+
+            if ($receipt) {
+                // For bulk/temporary lists: Update receipt quantity and amount when deleting items
+                if ($receipt->item_quantity > 1) {
+                    // Decrease quantity by 1 and subtract item amount
+                    $newQuantity = $receipt->item_quantity - 1;
+                    $newAmount = $receipt->amount - $itemAmount;
+                    
+                    $receipt->update([
+                        'item_quantity' => $newQuantity,
+                        'amount' => $newAmount,
+                        'updated_by' => $currentUser->id,
+                    ]);
+                    
+                    Log::info('Receipt quantity and amount updated for item deletion', [
+                        'receipt_id' => $receipt->id,
+                        'old_quantity' => $receipt->item_quantity + 1,
+                        'new_quantity' => $newQuantity,
+                        'old_amount' => $receipt->amount + $itemAmount,
+                        'new_amount' => $newAmount,
+                        'deleted_item_amount' => $itemAmount,
+                    ]);
+                } else {
+                    // If this is the last item, mark receipt as deleted but preserve original values
+                    $receipt->update([
+                        'dlt_status' => true,
+                        'updated_by' => $currentUser->id,
+                    ]);
+                    
+                    Log::info('Receipt marked as deleted - last item in bulk', [
+                        'receipt_id' => $receipt->id,
+                        'final_quantity' => $receipt->item_quantity,
+                        'final_amount' => $receipt->amount,
+                    ]);
+                }
+            }
+
+            // Handle Payment records for COD items
+            if ($item->amount > 0) {
+                $payments = $item->payments;
+                foreach ($payments as $payment) {
+                    // Soft delete payment by updating status to 'delete' (enum value)
+                    $payment->update([
+                        'status' => 'delete',
+                        'updated_at' => now(),
+                    ]);
+                }
+
+                Log::info('Payment records marked as deleted', [
+                    'item_id' => $item->id,
+                    'payments_deleted' => $payments->count(),
+                ]);
+            }
+
+            // Handle SMS records - update status to 'delete'
+            $smsRecords = $item->smsSents;
+            if ($smsRecords->count() > 0) {
+                foreach ($smsRecords as $sms) {
+                    $sms->update([
+                        'status' => 'delete',
+                        'updated_at' => now(),
+                    ]);
+                }
+
+                Log::info('SMS records marked as deleted', [
+                    'item_id' => $item->id,
+                    'sms_records_deleted' => $smsRecords->count(),
+                ]);
+            }
+
+            // Update ItemBulk quantity to reflect active items
+            if ($itemBulk->item_quantity > 1) {
+                $itemBulk->update([
+                    'item_quantity' => $itemBulk->item_quantity - 1,
+                ]);
+                
+                Log::info('ItemBulk quantity updated for item deletion', [
+                    'item_bulk_id' => $itemBulk->id,
+                    'old_quantity' => $itemBulk->item_quantity + 1,
+                    'new_quantity' => $itemBulk->item_quantity,
+                ]);
+            } else {
+                // If this was the last item, set quantity to 0
+                $itemBulk->update([
+                    'item_quantity' => 0,
+                ]);
+                
+                Log::info('ItemBulk quantity set to 0 - last item deleted', [
+                    'item_bulk_id' => $itemBulk->id,
+                ]);
+            }
+
+            // Update item status to 'delete' instead of permanently deleting
+            // Do NOT change ItemBulk quantity - keep original count for statistics
+            $item->update([
+                'status' => 'delete',
+                'updated_by' => $currentUser->id,
+                'updated_at' => now(),
+            ]);
+
+            DB::commit();
+
+            Log::info('Item status updated to delete with proper cleanup', [
+                'item_id' => $id,
+                'barcode' => $barcode,
+                'user_id' => $currentUser->id,
+                'receipt_updated' => $receipt ? true : false,
+                'item_status' => 'delete',
+            ]);
+
+            return response()->json([
+                'success' => true,
+                'message' => 'Item with barcode ' . $barcode . ' marked as deleted. Receipt quantity and amount updated accordingly.'
+            ]);
+
+        } catch (\Exception $e) {
+            DB::rollback();
+            Log::error('Error deleting item', [
+                'item_id' => $id,
+                'error' => $e->getMessage(),
+                'user_id' => $currentUser->id,
+            ]);
+
+            return response()->json([
+                'success' => false,
+                'message' => 'Error deleting item: ' . $e->getMessage()
+            ]);
+        }
     }
 
     /**
@@ -1038,7 +1264,7 @@ class PMItemController extends Controller
      */
     public function itemsList(Request $request)
     {
-        $currentUser = Auth::user();
+        $currentUser = Auth::guard('pm')->user();
         $search = $request->get('search');
         $status = $request->get('status');
         $perPage = $request->get('per_page', 15);
@@ -1058,6 +1284,9 @@ class PMItemController extends Controller
 
         if ($status) {
             $query->where('status', $status);
+        } else {
+            // If no specific status requested, exclude deleted items from normal view
+            $query->where('status', '!=', 'delete');
         }
 
         $items = $query->orderBy('created_at', 'desc')->paginate($perPage);

@@ -42,7 +42,7 @@ class CustomerAuthController extends Controller
             ]);
         }
 
-        Auth::login($user);
+        Auth::guard('customer')->login($user);
         $request->session()->regenerate();
 
         return redirect()->intended(route('customer.dashboard'));
@@ -78,13 +78,13 @@ class CustomerAuthController extends Controller
             'is_active' => true,
         ]);
 
-        Auth::login($user);
+        Auth::guard('customer')->login($user);
         return redirect()->route('customer.dashboard');
     }
 
     public function logout(Request $request)
     {
-        Auth::logout();
+        Auth::guard('customer')->logout();
         $request->session()->invalidate();
         $request->session()->regenerateToken();
 

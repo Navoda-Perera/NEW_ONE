@@ -23,7 +23,7 @@ class CustomerDashboardController extends Controller
     public function index()
     {
         /** @var User $user */
-        $user = Auth::user();
+        $user = Auth::guard('customer')->user();
 
         // Load user with location relationship
         $user = User::with('location')->find($user->id);
@@ -75,7 +75,7 @@ class CustomerDashboardController extends Controller
     public function profile()
     {
         /** @var User $user */
-        $user = Auth::user();
+        $user = Auth::guard('customer')->user();
         return view('customer.profile', compact('user'));
     }
 
@@ -88,7 +88,7 @@ class CustomerDashboardController extends Controller
         ]);
 
         /** @var User $user */
-        $user = Auth::user();
+        $user = Auth::guard('customer')->user();
         $user->name = $request->name;
         $user->nic = $request->nic;
         $user->email = $request->email;
@@ -105,7 +105,7 @@ class CustomerDashboardController extends Controller
         ]);
 
         /** @var User $user */
-        $user = Auth::user();
+        $user = Auth::guard('customer')->user();
 
         if (!Hash::check($request->current_password, $user->password)) {
             return back()->withErrors(['current_password' => 'The current password is incorrect.']);
@@ -121,7 +121,7 @@ class CustomerDashboardController extends Controller
     public function services()
     {
         /** @var User $user */
-        $user = Auth::user();
+        $user = Auth::guard('customer')->user();
 
         // Get statistics from TemporaryUploadAssociate table which matches the items view
         $totalItems = TemporaryUploadAssociate::whereHas('temporaryUpload', function($q) use ($user) {
@@ -146,7 +146,7 @@ class CustomerDashboardController extends Controller
     public function addSingleItem()
     {
         /** @var User $user */
-        $user = Auth::user();
+        $user = Auth::guard('customer')->user();
         $locations = Location::active()->get();
 
         $serviceTypes = [
@@ -173,7 +173,7 @@ class CustomerDashboardController extends Controller
     public function storeSingleItem(Request $request)
     {
         /** @var User $user */
-        $user = Auth::user();
+        $user = Auth::guard('customer')->user();
 
         // Validation rules for items
         $rules = [
@@ -292,7 +292,7 @@ class CustomerDashboardController extends Controller
     public function bulkUpload()
     {
         /** @var User $user */
-        $user = Auth::user();
+        $user = Auth::guard('customer')->user();
         $locations = Location::active()->get();
 
         // For bulk upload, we just need simple key-value pairs
@@ -328,7 +328,7 @@ class CustomerDashboardController extends Controller
         ]);
 
         /** @var User $user */
-        $user = Auth::user();
+        $user = Auth::guard('customer')->user();
 
         // Store the uploaded file
         $file = $request->file('bulk_file');
@@ -702,7 +702,7 @@ class CustomerDashboardController extends Controller
     public function items(Request $request)
     {
         /** @var User $user */
-        $user = Auth::user();
+        $user = Auth::guard('customer')->user();
 
         // Get uploads grouped by TemporaryUpload with item counts and status summaries
         $uploadsQuery = TemporaryUpload::where('user_id', $user->id)
@@ -773,7 +773,7 @@ class CustomerDashboardController extends Controller
     public function viewUpload($id)
     {
         /** @var User $user */
-        $user = Auth::user();
+        $user = Auth::guard('customer')->user();
 
         // Get the specific upload with all its items
         $upload = TemporaryUpload::with(['associates', 'location'])
@@ -793,7 +793,7 @@ class CustomerDashboardController extends Controller
     public function bulkStatus($id)
     {
         /** @var User $user */
-        $user = Auth::user();
+        $user = Auth::guard('customer')->user();
         $temporaryUpload = TemporaryUpload::with('associates')
             ->where('user_id', $user->id)
             ->findOrFail($id);
@@ -853,7 +853,7 @@ class CustomerDashboardController extends Controller
         ]);
 
         /** @var User $user */
-        $user = Auth::user();
+        $user = Auth::guard('customer')->user();
 
         $associate = TemporaryUploadAssociate::whereHas('temporaryUpload', function($q) use ($user) {
             $q->where('user_id', $user->id);
@@ -874,7 +874,7 @@ class CustomerDashboardController extends Controller
     public function deleteBulkItem($id)
     {
         /** @var User $user */
-        $user = Auth::user();
+        $user = Auth::guard('customer')->user();
 
         $associate = TemporaryUploadAssociate::whereHas('temporaryUpload', function($q) use ($user) {
             $q->where('user_id', $user->id);
@@ -888,7 +888,7 @@ class CustomerDashboardController extends Controller
     public function submitBulkToPM($id)
     {
         /** @var User $user */
-        $user = Auth::user();
+        $user = Auth::guard('customer')->user();
 
         $temporaryUpload = TemporaryUpload::where('user_id', $user->id)->findOrFail($id);
 
@@ -927,7 +927,7 @@ class CustomerDashboardController extends Controller
     public function deleteBulkUpload($id)
     {
         /** @var User $user */
-        $user = Auth::user();
+        $user = Auth::guard('customer')->user();
 
         // Find the temporary upload and ensure it belongs to the current user
         $temporaryUpload = TemporaryUpload::where('id', $id)

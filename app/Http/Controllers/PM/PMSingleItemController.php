@@ -19,7 +19,7 @@ class PMSingleItemController extends Controller
 {
     public function index()
     {
-        $user = Auth::user();
+        $user = Auth::guard('pm')->user();
 
         return view('pm.single-item.index', [
             'user' => $user,
@@ -55,7 +55,7 @@ class PMSingleItemController extends Controller
 
         DB::beginTransaction();
         try {
-            $user = Auth::user();
+            $user = Auth::guard('pm')->user();
 
             // Calculate postage using SLP pricing
             $postage = SlpPricing::calculatePrice($request->weight);
@@ -129,7 +129,7 @@ class PMSingleItemController extends Controller
 
         DB::beginTransaction();
         try {
-            $user = Auth::user();
+            $user = Auth::guard('pm')->user();
 
             // Calculate postage using Post pricing for COD
             $postage = PostPricing::calculatePrice($request->weight, 'cod');
@@ -203,7 +203,7 @@ class PMSingleItemController extends Controller
 
         DB::beginTransaction();
         try {
-            $user = Auth::user();
+            $user = Auth::guard('pm')->user();
 
             // Calculate postage using Post pricing for register
             $postage = PostPricing::calculatePrice($request->weight, 'register');
@@ -312,7 +312,7 @@ class PMSingleItemController extends Controller
         ])->findOrFail($receiptId);
 
         // Ensure PM can only view receipts from their location
-        $user = Auth::user();
+        $user = Auth::guard('pm')->user();
         if ($receipt->location_id !== $user->location_id) {
             abort(403, 'Unauthorized access to receipt');
         }
@@ -329,7 +329,7 @@ class PMSingleItemController extends Controller
         ])->findOrFail($receiptId);
 
         // Ensure PM can only print receipts from their location
-        $user = Auth::user();
+        $user = Auth::guard('pm')->user();
         if ($receipt->location_id !== $user->location_id) {
             abort(403, 'Unauthorized access to receipt');
         }

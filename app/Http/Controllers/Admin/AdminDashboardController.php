@@ -13,13 +13,13 @@ class AdminDashboardController extends Controller
     {
         $totalUsers = User::count();
         $adminUsers = User::where('role', 'admin')->count();
-        $adminUsers = User::where('role', 'admin')->count();
         $pmUsers = User::where('role', 'pm')->count();
+        $postmanUsers = User::where('role', 'postman')->count();
         $customerUsers = User::where('role', 'customer')->count();
         $internalUsers = User::where('user_type', 'internal')->count();
         $externalUsers = User::where('user_type', 'external')->count();
 
-        return view('admin.dashboard', compact('totalUsers', 'adminUsers', 'pmUsers', 'customerUsers', 'internalUsers', 'externalUsers'));
+        return view('admin.dashboard', compact('totalUsers', 'adminUsers', 'pmUsers', 'postmanUsers', 'customerUsers', 'internalUsers', 'externalUsers'));
     }
 
     public function users()
@@ -42,11 +42,11 @@ class AdminDashboardController extends Controller
             'email' => 'nullable|string|email|max:255',
             'mobile' => 'required|string|regex:/^[0-9]{10}$/',
             'password' => 'required|string|min:8|confirmed',
-            'role' => 'required|in:admin,pm',
+            'role' => 'required|in:admin,pm,postman',
         ];
 
-        // Add location validation only for PM role
-        if ($request->role === 'pm') {
+        // Add location validation for PM and Postman roles
+        if (in_array($request->role, ['pm', 'postman'])) {
             $validationRules['location_id'] = 'required|exists:locations,id';
         }
 

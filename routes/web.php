@@ -22,6 +22,16 @@ Route::get('/', function () {
     return view('welcome');
 });
 
+// Temporary CSRF test routes
+Route::get('/test-csrf', function () {
+    return response()->view('csrf_test');
+});
+
+Route::post('/test-csrf', function (Illuminate\Http\Request $request) {
+    $request->validate(['test_field' => 'required']);
+    return back()->with('success', 'CSRF test passed! Field value: ' . $request->test_field);
+});
+
 // Default login route for Laravel auth middleware
 Route::get('/login', function () {
     return redirect('/admin/login');
@@ -98,6 +108,7 @@ Route::prefix('pm')->name('pm.')->group(function () {
         Route::get('/items/pending/{serviceType}', [PMItemController::class, 'pendingByServiceType'])->name('items.pending.by-service-type');
         Route::get('/items/{id}/edit', [PMItemController::class, 'edit'])->name('items.edit');
         Route::post('/items/{id}/accept', [PMItemController::class, 'accept'])->name('items.accept');
+        Route::post('/items/{id}/update-only', [PMItemController::class, 'updateOnly'])->name('items.update-only');
         Route::post('/items/{id}/accept-with-updates', [PMItemController::class, 'acceptWithUpdates'])->name('items.accept-with-updates');
         Route::post('/items/{id}/quick-accept', [PMItemController::class, 'quickAccept'])->name('items.quick-accept');
         Route::post('/items/{id}/reject', [PMItemController::class, 'reject'])->name('items.reject');
@@ -107,6 +118,8 @@ Route::prefix('pm')->name('pm.')->group(function () {
         // Customer uploads management
         Route::get('/customer-uploads', [PMDashboardController::class, 'customerUploads'])->name('customer-uploads');
         Route::get('/view-customer-upload/{id}', [PMDashboardController::class, 'viewCustomerUpload'])->name('view-customer-upload');
+        Route::post('/accept-all-upload/{id}', [PMDashboardController::class, 'acceptAllUpload'])->name('accept-all-upload');
+        Route::post('/accept-selected-upload/{id}', [PMDashboardController::class, 'acceptSelectedUpload'])->name('accept-selected-upload');
 
         // PM Bulk Upload (goes directly to items/item_bulk tables)
         Route::get('/bulk-upload', [PMDashboardController::class, 'bulkUpload'])->name('bulk-upload');
