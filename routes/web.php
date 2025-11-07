@@ -24,6 +24,17 @@ Route::get('/', function () {
 
 // Temporary CSRF test routes
 Route::get('/test-csrf', function () {
+    return view('test-csrf');
+})->name('test.csrf');
+
+Route::post('/test-csrf', function (\Illuminate\Http\Request $request) {
+    $request->validate([
+        'test_input' => 'required|string'
+    ]);
+
+    return back()->with('success', 'CSRF test successful! Data: ' . $request->test_input);
+})->name('test.csrf.submit');
+Route::get('/test-csrf', function () {
     return response()->view('csrf_test');
 });
 

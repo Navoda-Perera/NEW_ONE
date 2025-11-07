@@ -68,17 +68,6 @@
                             </div>
                         @endif
 
-                        @if(config('app.debug'))
-                            <div class="alert alert-info border-0 rounded-3 mb-3">
-                                <small>
-                                    <strong>Debug Info:</strong><br>
-                                    CSRF Token: {{ csrf_token() }}<br>
-                                    Session ID: {{ session()->getId() }}<br>
-                                    Route: {{ route('admin.login.post') }}
-                                </small>
-                            </div>
-                        @endif
-
                         <form method="POST" action="{{ route('admin.login.post') }}">
                             @csrf
                             <div class="form-floating mb-3">
