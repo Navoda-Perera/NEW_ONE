@@ -2,22 +2,22 @@
 @if(config('app.debug'))
     <div class="small text-muted mb-2">
         Debug: CurrentUser = {{ $currentUser ? 'Found' : 'NULL' }}
-        | Auth User = {{ auth()->user() ? 'Found' : 'NULL' }}
+        | Auth User = {{ auth('pm')->user() ? 'Found' : 'NULL' }}
         @if($currentUser)
             | Location = {{ $currentUser->location ? 'Found' : 'NULL' }}
             | User ID = {{ $currentUser->id }}
             | Location ID = {{ $currentUser->location_id ?? 'NULL' }}
         @endif
-        @if(auth()->user())
-            | Auth Name = {{ auth()->user()->name }}
-            | Auth Location ID = {{ auth()->user()->location_id ?? 'NULL' }}
+        @if(auth('pm')->user())
+            | Auth Name = {{ auth('pm')->user()->name }}
+            | Auth Location ID = {{ auth('pm')->user()->location_id ?? 'NULL' }}
         @endif
     </div>
 @endif
 
-{{-- Use auth()->user() directly if $currentUser is null --}}
+{{-- Use auth('pm')->user() directly if $currentUser is null --}}
 @php
-    $user = $currentUser ?? auth()->user();
+    $user = $currentUser ?? auth('pm')->user();
     if ($user && !$user->relationLoaded('location')) {
         $user->load('location');
     }

@@ -34,7 +34,7 @@
     // Determine current authenticated user from appropriate guard
     $currentUser = null;
     $currentGuard = null;
-    
+
     if (auth('admin')->check()) {
         $currentUser = auth('admin')->user();
         $currentGuard = 'admin';

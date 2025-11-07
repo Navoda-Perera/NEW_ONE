@@ -15,10 +15,10 @@ $files = [
     'app/Http/Controllers/PM/PMDashboardController.php' => 'pm',
     'app/Http/Controllers/PM/PMItemController.php' => 'pm',
     'app/Http/Controllers/PM/PMSingleItemController.php' => 'pm',
-    
+
     // Admin Controllers
     'app/Http/Controllers/Admin/AdminDashboardController.php' => 'admin',
-    
+
     // Customer Controllers
     'app/Http/Controllers/Customer/CustomerDashboardController.php' => 'customer',
     'app/Http/Controllers/Customer/CustomerReceiptController.php' => 'customer',
@@ -26,22 +26,22 @@ $files = [
 
 foreach ($files as $file => $guard) {
     $fullPath = "c:\\Users\\User\\Desktop\\NEW_ONE\\{$file}";
-    
+
     if (file_exists($fullPath)) {
         echo "Processing: {$file} (guard: {$guard})\n";
-        
+
         $content = file_get_contents($fullPath);
-        
+
         // Count occurrences before replacement
         $beforeCount = substr_count($content, 'Auth::user()');
-        
+
         // Replace Auth::user() with Auth::guard('guard')->user()
         $newContent = str_replace('Auth::user()', "Auth::guard('{$guard}')->user()", $content);
-        
+
         // Count occurrences after replacement
         $afterCount = substr_count($newContent, 'Auth::user()');
         $replacedCount = $beforeCount - $afterCount;
-        
+
         if ($replacedCount > 0) {
             file_put_contents($fullPath, $newContent);
             echo "  → Replaced {$replacedCount} occurrence(s)\n";
