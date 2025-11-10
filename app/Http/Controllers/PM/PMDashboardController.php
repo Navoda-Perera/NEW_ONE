@@ -644,15 +644,21 @@ class PMDashboardController extends Controller
             // Create receipt for accepted items (all items should have receipts)
             $allItems = $itemBulk->items;
             if ($allItems->count() > 0) {
-                // Calculate total amount including postage for all items
-                $totalAmount = $allItems->sum(function($item) {
-                    return ($item->amount ?: 0) + ($item->postage ?: 0);
-                });
+                // Calculate amounts based on service type logic
+                $codAmount = $allItems->sum('amount'); // COD amounts from items
+                $postageAmount = $pendingItems->sum('postage'); // Postage from temp uploads
+                
+                // Total calculation based on service types:
+                // - COD: postage + amount
+                // - SLP Courier/Register Post: postage only (no COD amount)
+                $totalAmount = $codAmount + $postageAmount;
                 
                 Receipt::create([
                     'item_quantity' => $allItems->count(),
                     'item_bulk_id' => $itemBulk->id,
-                    'amount' => $totalAmount,
+                    'amount' => $codAmount, // COD amount only
+                    'postage' => $postageAmount, // Postage fees
+                    'total_amount' => $totalAmount, // Combined total
                     'payment_type' => 'cash',
                     'passcode' => $this->generatePasscode(),
                     'created_by' => $currentUser->id,
@@ -751,15 +757,21 @@ class PMDashboardController extends Controller
             // Create receipt for accepted items (all items should have receipts)
             $allItems = $itemBulk->items;
             if ($allItems->count() > 0) {
-                // Calculate total amount including postage for all items
-                $totalAmount = $allItems->sum(function($item) {
-                    return ($item->amount ?: 0) + ($item->postage ?: 0);
-                });
+                // Calculate amounts based on service type logic
+                $codAmount = $allItems->sum('amount'); // COD amounts from items
+                $postageAmount = $selectedItems->sum('postage'); // Postage from selected temp uploads
+                
+                // Total calculation based on service types:
+                // - COD: postage + amount  
+                // - SLP Courier/Register Post: postage only (no COD amount)
+                $totalAmount = $codAmount + $postageAmount;
                 
                 Receipt::create([
                     'item_quantity' => $allItems->count(),
                     'item_bulk_id' => $itemBulk->id,
-                    'amount' => $totalAmount,
+                    'amount' => $codAmount, // COD amount only
+                    'postage' => $postageAmount, // Postage fees
+                    'total_amount' => $totalAmount, // Combined total
                     'payment_type' => 'cash',
                     'passcode' => $this->generatePasscode(),
                     'created_by' => $currentUser->id,

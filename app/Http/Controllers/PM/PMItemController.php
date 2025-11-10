@@ -182,10 +182,20 @@ class PMItemController extends Controller
         ]);
 
         // Create Receipt for the accepted item (include both amount and postage)
+        $codAmount = $item->amount ?? 0; // COD amount from temp upload
+        $postageAmount = $item->postage ?? 0; // Postage from temp upload
+
+        // Total calculation based on service type:
+        // - COD: postage + amount
+        // - SLP Courier/Register Post: postage only
+        $totalAmount = $codAmount + $postageAmount;
+
         $receipt = Receipt::create([
             'item_quantity' => 1,
             'item_bulk_id' => $itemBulk->id,
-            'amount' => ($item->amount ?? 0) + ($item->postage ?? 0), // Include both amount and postage
+            'amount' => $codAmount, // COD amount only
+            'postage' => $postageAmount, // Postage fees
+            'total_amount' => $totalAmount, // Combined total
             'payment_type' => 'cash',
             'created_by' => $currentUser->id,
             'location_id' => $item->temporaryUpload->location_id,

@@ -11,6 +11,8 @@ class Receipt extends Model
         'item_quantity',
         'item_bulk_id',
         'amount',
+        'postage',
+        'total_amount',
         'company_id',
         'passcode',
         'payment_type',
@@ -22,6 +24,8 @@ class Receipt extends Model
 
     protected $casts = [
         'amount' => 'decimal:2',
+        'postage' => 'decimal:2',
+        'total_amount' => 'decimal:2',
         'dlt_status' => 'boolean',
         'item_quantity' => 'integer',
     ];
