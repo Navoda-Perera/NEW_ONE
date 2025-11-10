@@ -12,8 +12,6 @@ class VerifyCsrfToken extends Middleware
      * @var array<int, string>
      */
     protected $except = [
-        'admin/login',
-        'pm/login',
-        'customer/login',
+        // Keep CSRF protection for login forms - only exclude API endpoints if needed
     ];
 }

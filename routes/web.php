@@ -22,6 +22,11 @@ Route::get('/', function () {
     return view('welcome');
 });
 
+// CSRF token refresh route
+Route::get('/csrf-token', function () {
+    return response()->json(['token' => csrf_token()]);
+})->name('csrf.refresh');
+
 // Temporary CSRF test routes
 Route::get('/test-csrf', function () {
     return view('test-csrf');
@@ -71,6 +76,8 @@ Route::prefix('admin')->name('admin.')->group(function () {
         Route::get('/users', [AdminDashboardController::class, 'users'])->name('users.index');
         Route::get('/users/create', [AdminDashboardController::class, 'createUser'])->name('users.create');
         Route::post('/users', [AdminDashboardController::class, 'storeUser'])->name('users.store');
+        Route::get('/users/{user}/edit', [AdminDashboardController::class, 'editUser'])->name('users.edit');
+        Route::put('/users/{user}', [AdminDashboardController::class, 'updateUser'])->name('users.update');
         Route::patch('/users/{user}/toggle-status', [AdminDashboardController::class, 'toggleUserStatus'])->name('users.toggle-status');
 
         // Admin-only company management

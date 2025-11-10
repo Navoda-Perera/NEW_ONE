@@ -15,6 +15,7 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\DB;
+use Exception;
 
 class PMItemController extends Controller
 {
@@ -180,11 +181,11 @@ class PMItemController extends Controller
             'status' => 'accept',
         ]);
 
-        // Create Receipt for the accepted item (only item amount, no postage)
+        // Create Receipt for the accepted item (include both amount and postage)
         $receipt = Receipt::create([
             'item_quantity' => 1,
             'item_bulk_id' => $itemBulk->id,
-            'amount' => $item->amount ?? 0, // Only item amount, no postage
+            'amount' => ($item->amount ?? 0) + ($item->postage ?? 0), // Include both amount and postage
             'payment_type' => 'cash',
             'created_by' => $currentUser->id,
             'location_id' => $item->temporaryUpload->location_id,
@@ -997,31 +998,51 @@ class PMItemController extends Controller
      */
     public function searchByBarcode(Request $request)
     {
-        $request->validate([
-            'barcode' => 'required|string'
-        ]);
+        try {
+            $request->validate([
+                'barcode' => 'required|string'
+            ]);
 
-        $currentUser = Auth::guard('pm')->user();
-        $barcode = trim($request->barcode);
+            $currentUser = Auth::guard('pm')->user();
+            $barcode = trim($request->barcode);
 
-        // Search in main items table
-        $item = Item::with(['itemBulk', 'creator', 'updater'])
-            ->where('barcode', $barcode)
-            ->whereHas('itemBulk', function ($query) use ($currentUser) {
-                $query->where('location_id', $currentUser->location_id);
-            })
-            ->first();
+            // Simple logging
+            Log::info('PM Item Search', [
+                'barcode' => $barcode,
+                'user' => $currentUser ? $currentUser->name : 'No user'
+            ]);
 
-        if (!$item) {
-            // Search in temporary upload associates
+            if (!$currentUser) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Authentication error'
+                ]);
+            }
+
+            // Search in main items table (removed location restriction)
+            $item = Item::with(['itemBulk', 'creator', 'updater'])
+                ->where('barcode', $barcode)
+                ->first();
+
+            if ($item) {
+                Log::info('Item found', ['item_id' => $item->id]);
+
+                return response()->json([
+                    'success' => true,
+                    'type' => 'processed',
+                    'item' => $item,
+                    'message' => 'Item found successfully'
+                ]);
+            }
+
+            // Search in temporary upload associates (removed location restriction)
             $tempItem = TemporaryUploadAssociate::with(['temporaryUpload.user'])
                 ->where('barcode', $barcode)
-                ->whereHas('temporaryUpload', function ($query) use ($currentUser) {
-                    $query->where('location_id', $currentUser->location_id);
-                })
                 ->first();
 
             if ($tempItem) {
+                Log::info('Temporary item found', ['temp_id' => $tempItem->id]);
+
                 return response()->json([
                     'success' => true,
                     'type' => 'temporary',
@@ -1030,18 +1051,24 @@ class PMItemController extends Controller
                 ]);
             }
 
+            Log::info('No item found');
+
             return response()->json([
                 'success' => false,
                 'message' => 'Item not found with barcode: ' . $barcode
             ]);
-        }
 
-        return response()->json([
-            'success' => true,
-            'type' => 'processed',
-            'item' => $item,
-            'message' => 'Item found successfully'
-        ]);
+        } catch (Exception $e) {
+            Log::error('Search error', [
+                'error' => $e->getMessage(),
+                'trace' => $e->getTraceAsString()
+            ]);
+
+            return response()->json([
+                'success' => false,
+                'message' => 'An error occurred while searching'
+            ]);
+        }
     }
 
     /**
@@ -1051,10 +1078,8 @@ class PMItemController extends Controller
     {
         $currentUser = Auth::guard('pm')->user();
 
+        // Remove location restriction - allow any PM to edit any item
         $item = Item::with(['itemBulk', 'creator', 'updater'])
-            ->whereHas('itemBulk', function ($query) use ($currentUser) {
-                $query->where('location_id', $currentUser->location_id);
-            })
             ->findOrFail($id);
 
         return view('pm.item-management.edit', compact('item'));
@@ -1075,9 +1100,8 @@ class PMItemController extends Controller
 
         $currentUser = Auth::guard('pm')->user();
 
-        $item = Item::whereHas('itemBulk', function ($query) use ($currentUser) {
-            $query->where('location_id', $currentUser->location_id);
-        })->findOrFail($id);
+        // Remove location restriction - allow any PM to update any item
+        $item = Item::findOrFail($id);
 
         $item->update([
             'barcode' => $request->barcode,
@@ -1108,10 +1132,9 @@ class PMItemController extends Controller
     {
         $currentUser = Auth::guard('pm')->user();
 
+        // Remove location restriction - allow any PM to delete any item
         $item = Item::with(['itemBulk.receipts', 'payments', 'smsSents'])
-            ->whereHas('itemBulk', function ($query) use ($currentUser) {
-                $query->where('location_id', $currentUser->location_id);
-            })->findOrFail($id);
+            ->findOrFail($id);
 
         // Check if item can be deleted (not dispatched or delivered)
         if (in_array($item->status, ['dispatched', 'delivered'])) {
@@ -1136,13 +1159,13 @@ class PMItemController extends Controller
                     // Decrease quantity by 1 and subtract item amount
                     $newQuantity = $receipt->item_quantity - 1;
                     $newAmount = $receipt->amount - $itemAmount;
-                    
+
                     $receipt->update([
                         'item_quantity' => $newQuantity,
                         'amount' => $newAmount,
                         'updated_by' => $currentUser->id,
                     ]);
-                    
+
                     Log::info('Receipt quantity and amount updated for item deletion', [
                         'receipt_id' => $receipt->id,
                         'old_quantity' => $receipt->item_quantity + 1,
@@ -1157,7 +1180,7 @@ class PMItemController extends Controller
                         'dlt_status' => true,
                         'updated_by' => $currentUser->id,
                     ]);
-                    
+
                     Log::info('Receipt marked as deleted - last item in bulk', [
                         'receipt_id' => $receipt->id,
                         'final_quantity' => $receipt->item_quantity,
@@ -1204,7 +1227,7 @@ class PMItemController extends Controller
                 $itemBulk->update([
                     'item_quantity' => $itemBulk->item_quantity - 1,
                 ]);
-                
+
                 Log::info('ItemBulk quantity updated for item deletion', [
                     'item_bulk_id' => $itemBulk->id,
                     'old_quantity' => $itemBulk->item_quantity + 1,
@@ -1215,7 +1238,7 @@ class PMItemController extends Controller
                 $itemBulk->update([
                     'item_quantity' => 0,
                 ]);
-                
+
                 Log::info('ItemBulk quantity set to 0 - last item deleted', [
                     'item_bulk_id' => $itemBulk->id,
                 ]);

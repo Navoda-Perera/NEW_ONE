@@ -1,158 +1,171 @@
-@extends('layouts.app')
+@extends('layouts.modern-pm')
 
-@section('title', 'Single Item Management')
-
-@section('nav-links')
-    <li class="nav-item">
-        <a class="nav-link" href="{{ route('pm.dashboard') }}">
-            <i class="bi bi-speedometer2"></i> Dashboard
-        </a>
-    </li>
-    <li class="nav-item">
-        <a class="nav-link" href="{{ route('pm.customers.index') }}">
-            <i class="bi bi-people"></i> Customers
-        </a>
-    </li>
-    <li class="nav-item">
-        <a class="nav-link active" href="{{ route('pm.single-item.index') }}">
-            <i class="bi bi-box-seam"></i> Add Single Item
-        </a>
-    </li>
-    <li class="nav-item">
-        <a class="nav-link" href="{{ route('pm.item-management.index') }}">
-            <i class="bi bi-search"></i> Item Management
-        </a>
-    </li>
-    <li class="nav-item">
-        <a class="nav-link" href="{{ route('pm.bulk-upload') }}">
-            <i class="bi bi-cloud-upload"></i> Bulk Upload
-        </a>
-    </li>
-    <li class="nav-item">
-        <a class="nav-link" href="{{ route('pm.postmen.index') }}">
-            <i class="bi bi-person-badge"></i> Postmen
-        </a>
-    </li>
-@endsection
+@section('title', 'Add Single Item')
 
 @section('content')
-<div class="container-fluid">
-    <div class="row">
-        <div class="col-12">
-            <div class="d-flex justify-content-between align-items-center mb-4">
-                <h1 class="h3 mb-0 text-gray-800">Single Item Management</h1>
-                <nav aria-label="breadcrumb">
-                    <ol class="breadcrumb">
-                        <li class="breadcrumb-item"><a href="{{ route('pm.dashboard') }}">Dashboard</a></li>
-                        <li class="breadcrumb-item active">Single Item</li>
-                    </ol>
-                </nav>
+<!-- Page Header -->
+<div class="row mb-4">
+    <div class="col-12">
+        <div class="d-flex justify-content-between align-items-center">
+            <div>
+                <h2 class="fw-bold mb-1">
+                    <i class="bi bi-box-seam me-2 text-danger"></i>
+                    Single Item Management
+                </h2>
+                <p class="text-muted mb-0">Add individual postal items for SLP Courier, COD, and Register Post services.</p>
             </div>
-        </div>
-    </div>
-
-    <div class="row">
-        <div class="col-12">
-            <div class="alert alert-info">
-                <i class="bi bi-info-circle"></i>
-                <strong>Single Item Services:</strong> Add individual postal items for SLP Courier, COD, and Register Post services.
-            </div>
-        </div>
-    </div>
-
-    <div class="row g-4">
-        <!-- SLP Courier Card -->
-        <div class="col-lg-4 col-md-6">
-            <div class="card shadow-sm h-100 border-primary">
-                <div class="card-body text-center">
-                    <div class="mb-3">
-                        <i class="bi bi-truck display-4 text-primary"></i>
-                    </div>
-                    <h5 class="card-title text-primary">SLP Courier</h5>
-                    <p class="card-text text-muted">
-                        Add single courier item with weight-based pricing calculation.
-                    </p>
-                    <ul class="list-unstyled text-start small mb-3">
-                        <li><i class="bi bi-check text-success"></i> Sender Details</li>
-                        <li><i class="bi bi-check text-success"></i> Receiver Details</li>
-                        <li><i class="bi bi-check text-success"></i> Weight & Postage</li>
-                        <li><i class="bi bi-check text-success"></i> Barcode Tracking</li>
-                    </ul>
-                    <a href="{{ route('pm.single-item.slp-form') }}" class="btn btn-primary btn-lg w-100">
-                        <i class="bi bi-plus-circle"></i> Add SLP Item
-                    </a>
-                </div>
-            </div>
-        </div>
-
-        <!-- COD Card -->
-        <div class="col-lg-4 col-md-6">
-            <div class="card shadow-sm h-100 border-warning">
-                <div class="card-body text-center">
-                    <div class="mb-3">
-                        <i class="bi bi-cash-coin display-4 text-warning"></i>
-                    </div>
-                    <h5 class="card-title text-warning">Cash on Delivery (COD)</h5>
-                    <p class="card-text text-muted">
-                        Add COD item with amount collection and postage calculation.
-                    </p>
-                    <ul class="list-unstyled text-start small mb-3">
-                        <li><i class="bi bi-check text-success"></i> COD Amount</li>
-                        <li><i class="bi bi-check text-success"></i> Postage Calculation</li>
-                        <li><i class="bi bi-check text-success"></i> Payment Collection</li>
-                        <li><i class="bi bi-check text-success"></i> Receipt Generation</li>
-                    </ul>
-                    <a href="{{ route('pm.single-item.cod-form') }}" class="btn btn-warning btn-lg w-100">
-                        <i class="bi bi-plus-circle"></i> Add COD Item
-                    </a>
-                </div>
-            </div>
-        </div>
-
-        <!-- Register Post Card -->
-        <div class="col-lg-4 col-md-6">
-            <div class="card shadow-sm h-100 border-success">
-                <div class="card-body text-center">
-                    <div class="mb-3">
-                        <i class="bi bi-envelope-check display-4 text-success"></i>
-                    </div>
-                    <h5 class="card-title text-success">Register Post</h5>
-                    <p class="card-text text-muted">
-                        Add registered postal item with tracking and delivery confirmation.
-                    </p>
-                    <ul class="list-unstyled text-start small mb-3">
-                        <li><i class="bi bi-check text-success"></i> Registered Tracking</li>
-                        <li><i class="bi bi-check text-success"></i> Delivery Confirmation</li>
-                        <li><i class="bi bi-check text-success"></i> Weight-based Pricing</li>
-                        <li><i class="bi bi-check text-success"></i> Official Receipt</li>
-                    </ul>
-                    <a href="{{ route('pm.single-item.register-form') }}" class="btn btn-success btn-lg w-100">
-                        <i class="bi bi-plus-circle"></i> Add Register Item
-                    </a>
+            <div class="text-end">
+                <div class="badge bg-light text-dark fs-6 px-3 py-2">
+                    <i class="bi bi-geo-alt text-danger me-1"></i>
+                    {{ $location ? $location->name : 'No location' }}
                 </div>
             </div>
         </div>
     </div>
+</div>
 
-    <!-- Location Info -->
-    <div class="row mt-4">
-        <div class="col-12">
-            <div class="card border-info">
-                <div class="card-body">
-                    <div class="row align-items-center">
-                        <div class="col-md-8">
-                            <h6 class="card-title mb-0">
-                                <i class="bi bi-geo-alt text-info"></i> Current Location
-                            </h6>
-                            <p class="card-text text-muted mb-0">
-                                {{ $location ? $location->name : 'No location assigned' }} -
-                                All items will be created under this location
-                            </p>
+<!-- Service Cards -->
+<div class="row g-4">
+    <!-- SLP Courier Card -->
+    <div class="col-lg-4 col-md-6">
+        <div class="card border-0 shadow-sm h-100 service-card courier-card">
+            <div class="card-body text-center p-4">
+                <div class="service-icon mb-3">
+                    <i class="bi bi-truck display-4 text-primary"></i>
+                </div>
+                <h4 class="card-title text-primary fw-bold mb-3">SLP Courier</h4>
+                <p class="card-text text-muted mb-3">
+                    Add single courier item with weight-based pricing calculation.
+                </p>
+                
+                <div class="features-list mb-4">
+                    <div class="feature-item">
+                        <i class="bi bi-check-circle-fill text-success me-2"></i>
+                        <span>Sender Details</span>
+                    </div>
+                    <div class="feature-item">
+                        <i class="bi bi-check-circle-fill text-success me-2"></i>
+                        <span>Receiver Details</span>
+                    </div>
+                    <div class="feature-item">
+                        <i class="bi bi-check-circle-fill text-success me-2"></i>
+                        <span>Weight & Postage</span>
+                    </div>
+                    <div class="feature-item">
+                        <i class="bi bi-check-circle-fill text-success me-2"></i>
+                        <span>Barcode Tracking</span>
+                    </div>
+                </div>
+                
+                <a href="{{ route('pm.single-item.slp-form') }}" class="btn btn-primary btn-lg w-100 service-btn">
+                    <i class="bi bi-plus-circle me-2"></i>Add SLP Item
+                </a>
+            </div>
+        </div>
+    </div>
+
+    <!-- COD Card -->
+    <div class="col-lg-4 col-md-6">
+        <div class="card border-0 shadow-sm h-100 service-card cod-card">
+            <div class="card-body text-center p-4">
+                <div class="service-icon mb-3">
+                    <i class="bi bi-cash-coin display-4 text-warning"></i>
+                </div>
+                <h4 class="card-title text-warning fw-bold mb-3">Cash on Delivery (COD)</h4>
+                <p class="card-text text-muted mb-3">
+                    Add COD item with amount collection and postage calculation.
+                </p>
+                
+                <div class="features-list mb-4">
+                    <div class="feature-item">
+                        <i class="bi bi-check-circle-fill text-success me-2"></i>
+                        <span>COD Amount</span>
+                    </div>
+                    <div class="feature-item">
+                        <i class="bi bi-check-circle-fill text-success me-2"></i>
+                        <span>Postage Calculation</span>
+                    </div>
+                    <div class="feature-item">
+                        <i class="bi bi-check-circle-fill text-success me-2"></i>
+                        <span>Payment Collection</span>
+                    </div>
+                    <div class="feature-item">
+                        <i class="bi bi-check-circle-fill text-success me-2"></i>
+                        <span>Receipt Generation</span>
+                    </div>
+                </div>
+                
+                <a href="{{ route('pm.single-item.cod-form') }}" class="btn btn-warning btn-lg w-100 service-btn">
+                    <i class="bi bi-plus-circle me-2"></i>Add COD Item
+                </a>
+            </div>
+        </div>
+    </div>
+
+    <!-- Register Post Card -->
+    <div class="col-lg-4 col-md-6">
+        <div class="card border-0 shadow-sm h-100 service-card register-card">
+            <div class="card-body text-center p-4">
+                <div class="service-icon mb-3">
+                    <i class="bi bi-envelope-check display-4 text-danger"></i>
+                </div>
+                <h4 class="card-title text-danger fw-bold mb-3">Register Post</h4>
+                <p class="card-text text-muted mb-3">
+                    Add registered postal item with tracking and delivery confirmation.
+                </p>
+                
+                <div class="features-list mb-4">
+                    <div class="feature-item">
+                        <i class="bi bi-check-circle-fill text-success me-2"></i>
+                        <span>Registered Tracking</span>
+                    </div>
+                    <div class="feature-item">
+                        <i class="bi bi-check-circle-fill text-success me-2"></i>
+                        <span>Delivery Confirmation</span>
+                    </div>
+                    <div class="feature-item">
+                        <i class="bi bi-check-circle-fill text-success me-2"></i>
+                        <span>Weight-based Pricing</span>
+                    </div>
+                    <div class="feature-item">
+                        <i class="bi bi-check-circle-fill text-success me-2"></i>
+                        <span>Official Receipt</span>
+                    </div>
+                </div>
+                
+                <a href="{{ route('pm.single-item.register-form') }}" class="btn btn-danger btn-lg w-100 service-btn">
+                    <i class="bi bi-plus-circle me-2"></i>Add Register Item
+                </a>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Location Information Card -->
+<div class="row mt-5">
+    <div class="col-12">
+        <div class="card border-0 shadow-sm location-info-card">
+            <div class="card-body">
+                <div class="row align-items-center">
+                    <div class="col-md-8">
+                        <div class="d-flex align-items-center">
+                            <div class="location-icon me-3">
+                                <i class="bi bi-geo-alt-fill fs-3 text-danger"></i>
+                            </div>
+                            <div>
+                                <h5 class="mb-1 fw-bold">Current Location</h5>
+                                <p class="text-muted mb-0">
+                                    {{ $location ? $location->name : 'No location assigned' }} - All items will be created under this location
+                                </p>
+                            </div>
                         </div>
-                        <div class="col-md-4 text-md-end">
-                            <small class="text-muted">
+                    </div>
+                    <div class="col-md-4 text-md-end">
+                        <div class="pm-info">
+                            <span class="badge bg-danger bg-opacity-10 text-danger px-3 py-2">
+                                <i class="bi bi-person-badge me-1"></i>
                                 PM: {{ $user->name }}
-                            </small>
+                            </span>
                         </div>
                     </div>
                 </div>
@@ -162,22 +175,110 @@
 </div>
 
 <style>
-.card {
-    transition: transform 0.2s ease-in-out, box-shadow 0.2s ease-in-out;
+.service-card {
+    transition: all 0.3s ease;
+    border-radius: 12px;
+    overflow: hidden;
+    position: relative;
 }
 
-.card:hover {
-    transform: translateY(-5px);
-    box-shadow: 0 0.5rem 1rem rgba(0, 0, 0, 0.15) !important;
+.service-card:hover {
+    transform: translateY(-8px);
+    box-shadow: 0 12px 40px rgba(0,0,0,0.15) !important;
 }
 
-.display-4 {
-    font-size: 3rem;
+.service-card::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    height: 4px;
+    z-index: 1;
 }
 
-.btn-lg {
-    padding: 0.75rem 1.5rem;
-    font-size: 1.1rem;
+.courier-card::before {
+    background: linear-gradient(90deg, #007bff, #0056b3);
+}
+
+.cod-card::before {
+    background: linear-gradient(90deg, #ffc107, #ff8f00);
+}
+
+.register-card::before {
+    background: linear-gradient(90deg, #dc3545, #c82333);
+}
+
+.service-icon {
+    padding: 20px;
+    border-radius: 50%;
+    display: inline-block;
+    margin-bottom: 1rem;
+}
+
+.courier-card .service-icon {
+    background: rgba(0, 123, 255, 0.1);
+}
+
+.cod-card .service-icon {
+    background: rgba(255, 193, 7, 0.1);
+}
+
+.register-card .service-icon {
+    background: rgba(220, 53, 69, 0.1);
+}
+
+.features-list {
+    text-align: left;
+    margin: 0 auto;
+    max-width: 200px;
+}
+
+.feature-item {
+    display: flex;
+    align-items: center;
+    margin-bottom: 8px;
+    font-size: 0.9rem;
+    font-weight: 500;
+}
+
+.service-btn {
+    border-radius: 8px;
+    padding: 12px 24px;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    transition: all 0.3s ease;
+}
+
+.service-btn:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 6px 20px rgba(0,0,0,0.2);
+}
+
+.location-info-card {
+    background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%);
+    border-radius: 12px;
+}
+
+.location-icon {
+    width: 60px;
+    height: 60px;
+    background: rgba(220, 53, 69, 0.1);
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+@media (max-width: 768px) {
+    .service-card {
+        margin-bottom: 2rem;
+    }
+    
+    .features-list {
+        max-width: 100%;
+    }
 }
 </style>
 @endsection

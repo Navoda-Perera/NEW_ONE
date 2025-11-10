@@ -1,92 +1,80 @@
-@extends('layouts.app')
+@extends('layouts.modern-pm')
 
-@section('title', 'Add Register Post Item')
-
-@section('nav-links')
-    <li class="nav-item">
-        <a class="nav-link" href="{{ route('pm.dashboard') }}">
-            <i class="bi bi-speedometer2"></i> Dashboard
-        </a>
-    </li>
-    <li class="nav-item">
-        <a class="nav-link" href="{{ route('pm.customers.index') }}">
-            <i class="bi bi-people"></i> Customers
-        </a>
-    </li>
-    <li class="nav-item">
-        <a class="nav-link active" href="{{ route('pm.single-item.index') }}">
-            <i class="bi bi-box-seam"></i> Add Single Item
-        </a>
-    </li>
-    <li class="nav-item">
-        <a class="nav-link" href="{{ route('pm.bulk-upload') }}">
-            <i class="bi bi-cloud-upload"></i> Bulk Upload
-        </a>
-    </li>
-    <li class="nav-item">
-        <a class="nav-link" href="{{ route('pm.postmen.index') }}">
-            <i class="bi bi-person-badge"></i> Postmen
-        </a>
-    </li>
-@endsection
+@section('title', 'Create Register Post Item')
 
 @section('content')
 <div class="container-fluid">
     <div class="row">
         <div class="col-12">
-            <div class="d-flex justify-content-between align-items-center mb-4">
-                <h1 class="h3 mb-0 text-gray-800">
-                    <i class="bi bi-envelope-check text-success"></i> Add Register Post Item
-                </h1>
-                <nav aria-label="breadcrumb">
-                    <ol class="breadcrumb">
-                        <li class="breadcrumb-item"><a href="{{ route('pm.dashboard') }}">Dashboard</a></li>
-                        <li class="breadcrumb-item"><a href="{{ route('pm.single-item.index') }}">Single Item</a></li>
-                        <li class="breadcrumb-item active">Register Post</li>
-                    </ol>
-                </nav>
-            </div>
-        </div>
-    </div>
-
-    @if ($errors->any())
-        <div class="alert alert-danger">
-            <ul class="mb-0">
-                @foreach ($errors->all() as $error)
-                    <li>{{ $error }}</li>
-                @endforeach
-            </ul>
-        </div>
-    @endif
-
-    <div class="row">
-        <div class="col-lg-8 mx-auto">
-            <div class="card shadow">
-                <div class="card-header bg-success text-white">
-                    <h5 class="mb-0">
-                        <i class="bi bi-envelope-check"></i> Register Post Item Details
-                    </h5>
+            <!-- Header Section -->
+            <div class="bg-danger text-white p-4 rounded-top">
+                <div class="row align-items-center">
+                    <div class="col-md-6">
+                        <h4 class="mb-0">
+                            <i class="bi bi-shield-check-fill"></i>
+                            Create Register Post Item
+                        </h4>
+                        <small class="opacity-75">Secure postal service with tracking and insurance</small>
+                    </div>
+                    <div class="col-md-6 text-end">
+                        <span class="badge bg-light text-danger fs-6">
+                            <i class="bi bi-geo-alt-fill"></i> {{ auth()->user()->location->name ?? 'Unknown Location' }}
+                        </span>
+                    </div>
                 </div>
-                <div class="card-body">
-                    <form action="{{ route('pm.single-item.store-register') }}" method="POST">
+            </div>
+
+            <!-- Main Form Card -->
+            <div class="card border-0 rounded-top-0 shadow">
+                <div class="card-body p-4">
+                    <form method="POST" action="{{ route('pm.single-item.store-register') }}">
                         @csrf
 
+                        <!-- Error Display -->
+                        @if($errors->any())
+                            <div class="alert alert-danger">
+                                <ul class="mb-0">
+                                    @foreach ($errors->all() as $error)
+                                        <li>{{ $error }}</li>
+                                    @endforeach
+                                </ul>
+                            </div>
+                        @endif
+
                         <!-- Sender Information -->
-                        <h6 class="text-primary border-bottom pb-2 mb-3">
+                        <h6 class="text-danger border-bottom pb-2 mb-3">
                             <i class="bi bi-person-fill"></i> Sender Information
                         </h6>
 
                         <div class="row mb-3">
-                            <div class="col-md-12">
+                            <div class="col-md-6">
                                 <label for="sender_name" class="form-label">Sender Name <span class="text-danger">*</span></label>
                                 <input type="text" class="form-control" id="sender_name" name="sender_name"
                                        value="{{ old('sender_name') }}" required>
                             </div>
+                            <div class="col-md-6">
+                                <label for="sender_nic" class="form-label">Sender NIC <span class="text-danger">*</span></label>
+                                <input type="text" class="form-control" id="sender_nic" name="sender_nic"
+                                       value="{{ old('sender_nic') }}" required>
+                            </div>
+                        </div>
+
+                        <div class="row mb-3">
+                            <div class="col-md-6">
+                                <label for="sender_mobile" class="form-label">Sender Mobile <span class="text-danger">*</span></label>
+                                <input type="tel" class="form-control" id="sender_mobile" name="sender_mobile"
+                                       value="{{ old('sender_mobile') }}" placeholder="07XXXXXXXX" required>
+                            </div>
+                            <div class="col-md-6">
+                                <label for="sender_address" class="form-label">Sender Address <span class="text-danger">*</span></label>
+                                <textarea class="form-control" id="sender_address" name="sender_address"
+                                          rows="2" required>{{ old('sender_address') }}</textarea>
+                            </div>
                         </div>
 
                         <!-- Receiver Information -->
-                        <h6 class="text-success border-bottom pb-2 mb-3 mt-4">
-                            <i class="bi bi-person-check"></i> Receiver Information
+                        <h6 class="text-danger border-bottom pb-2 mb-3 mt-4">
+                            <i class="bi bi-geo-alt-fill"></i> Receiver Information
                         </h6>
 
                         <div class="row mb-3">
@@ -111,7 +99,7 @@
                         </div>
 
                         <!-- Item Information -->
-                        <h6 class="text-warning border-bottom pb-2 mb-3 mt-4">
+                        <h6 class="text-danger border-bottom pb-2 mb-3 mt-4">
                             <i class="bi bi-box"></i> Item Information
                         </h6>
 
@@ -136,7 +124,7 @@
                                 <div class="input-group">
                                     <input type="text" class="form-control" id="barcode" name="barcode"
                                            value="{{ old('barcode') }}" required>
-                                    <button type="button" class="btn btn-outline-secondary" id="generateBarcode">
+                                    <button type="button" class="btn btn-outline-danger" id="generateBarcode">
                                         <i class="bi bi-arrow-clockwise"></i> Generate
                                     </button>
                                 </div>
@@ -145,13 +133,13 @@
                         </div>
 
                         <!-- Register Post Features -->
-                        <div class="alert alert-success">
+                        <div class="alert alert-danger">
                             <h6 class="alert-heading"><i class="bi bi-shield-check"></i> Register Post Features</h6>
                             <ul class="mb-0">
-                                <li><i class="bi bi-check text-success"></i> <strong>Tracking:</strong> Full tracking from sender to receiver</li>
-                                <li><i class="bi bi-check text-success"></i> <strong>Delivery Confirmation:</strong> Signature required upon delivery</li>
-                                <li><i class="bi bi-check text-success"></i> <strong>Insurance:</strong> Basic coverage included</li>
-                                <li><i class="bi bi-check text-success"></i> <strong>Priority Handling:</strong> Faster processing and delivery</li>
+                                <li><i class="bi bi-check text-danger"></i> <strong>Tracking:</strong> Full tracking from sender to receiver</li>
+                                <li><i class="bi bi-check text-danger"></i> <strong>Delivery Confirmation:</strong> Signature required upon delivery</li>
+                                <li><i class="bi bi-check text-danger"></i> <strong>Insurance:</strong> Basic coverage included</li>
+                                <li><i class="bi bi-check text-danger"></i> <strong>Priority Handling:</strong> Faster processing and delivery</li>
                             </ul>
                         </div>
 
@@ -168,7 +156,7 @@
                                     <a href="{{ route('pm.single-item.index') }}" class="btn btn-secondary">
                                         <i class="bi bi-arrow-left"></i> Back
                                     </a>
-                                    <button type="submit" class="btn btn-success btn-lg" id="submitBtn">
+                                    <button type="submit" class="btn btn-danger btn-lg" id="submitBtn">
                                         <i class="bi bi-check-circle"></i> Create Register Post Item
                                     </button>
                                 </div>
@@ -180,6 +168,7 @@
         </div>
     </div>
 </div>
+@endsection
 
 @section('scripts')
 <script>
@@ -245,5 +234,4 @@ $(document).ready(function() {
     // No automatic barcode generation on page load
 });
 </script>
-@endsection
 @endsection

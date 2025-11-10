@@ -68,7 +68,7 @@
                             </div>
                         @endif
 
-                        <form method="POST" action="{{ route('admin.login.post') }}">
+                        <form method="POST" action="{{ route('admin.login.post') }}" id="loginForm">
                             @csrf
                             <div class="form-floating mb-3">
                                 <input
@@ -155,5 +155,44 @@
     </div>
 
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    <script>
+        // Refresh CSRF token periodically to prevent expiration
+        function refreshCSRFToken() {
+            fetch('{{ route("csrf.refresh") }}', {
+                method: 'GET',
+                headers: {
+                    'X-Requested-With': 'XMLHttpRequest'
+                }
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.token) {
+                    document.querySelector('meta[name="csrf-token"]').setAttribute('content', data.token);
+                    document.querySelector('input[name="_token"]').value = data.token;
+                }
+            })
+            .catch(error => {
+                console.log('CSRF refresh error:', error);
+            });
+        }
+
+        // Refresh CSRF token every 5 minutes
+        setInterval(refreshCSRFToken, 300000);
+
+        // Handle form submission
+        document.getElementById('loginForm').addEventListener('submit', function(e) {
+            // Get fresh CSRF token before submission
+            const csrfToken = document.querySelector('meta[name="csrf-token"]').getAttribute('content');
+            const tokenInput = document.querySelector('input[name="_token"]');
+            if (tokenInput) {
+                tokenInput.value = csrfToken;
+            }
+        });
+
+        // Refresh token when page gains focus
+        window.addEventListener('focus', function() {
+            refreshCSRFToken();
+        });
+    </script>
 </body>
 </html>

@@ -49,7 +49,7 @@ class PMDashboardController extends Controller
         // Load the user with location relationship for the view
         $currentUser = User::with('location')->find($currentUser->id);
 
-        return view('pm.dashboard', compact(
+        return view('pm.modern-dashboard', compact(
             'customerUsers',
             'activeCustomers',
             'externalCustomers',
@@ -88,7 +88,7 @@ class PMDashboardController extends Controller
         $customers = $customersQuery->orderBy('created_at', 'desc')
             ->paginate(15);
 
-        return view('pm.customers', compact('customers'));
+        return view('pm.customers.modern-index', compact('customers'));
     }
 
     public function createCustomer()
@@ -641,13 +641,16 @@ class PMDashboardController extends Controller
                 $acceptedCount++;
             }
 
-            // Create receipt for accepted items if COD service
-            $codItems = $itemBulk->items()->where('amount', '>', 0)->get();
-            if ($codItems->count() > 0) {
-                $totalAmount = $codItems->sum('amount');
+            // Create receipt for accepted items (all items should have receipts)
+            $allItems = $itemBulk->items;
+            if ($allItems->count() > 0) {
+                // Calculate total amount including postage for all items
+                $totalAmount = $allItems->sum(function($item) {
+                    return ($item->amount ?: 0) + ($item->postage ?: 0);
+                });
                 
                 Receipt::create([
-                    'item_quantity' => $codItems->count(),
+                    'item_quantity' => $allItems->count(),
                     'item_bulk_id' => $itemBulk->id,
                     'amount' => $totalAmount,
                     'payment_type' => 'cash',
@@ -660,7 +663,7 @@ class PMDashboardController extends Controller
             DB::commit();
 
             return back()->with('success', "Successfully accepted {$acceptedCount} items from upload #{$temporaryUpload->id} into ItemBulk #{$itemBulk->id}. " . 
-                                         ($codItems->count() > 0 ? "Receipt created for COD items." : ""));
+                                         "Receipt created for all accepted items.");
 
         } catch (\Exception $e) {
             DB::rollback();
@@ -745,13 +748,16 @@ class PMDashboardController extends Controller
                 $acceptedCount++;
             }
 
-            // Create receipt for accepted items if COD service
-            $codItems = $itemBulk->items()->where('amount', '>', 0)->get();
-            if ($codItems->count() > 0) {
-                $totalAmount = $codItems->sum('amount');
+            // Create receipt for accepted items (all items should have receipts)
+            $allItems = $itemBulk->items;
+            if ($allItems->count() > 0) {
+                // Calculate total amount including postage for all items
+                $totalAmount = $allItems->sum(function($item) {
+                    return ($item->amount ?: 0) + ($item->postage ?: 0);
+                });
                 
                 Receipt::create([
-                    'item_quantity' => $codItems->count(),
+                    'item_quantity' => $allItems->count(),
                     'item_bulk_id' => $itemBulk->id,
                     'amount' => $totalAmount,
                     'payment_type' => 'cash',
@@ -764,7 +770,7 @@ class PMDashboardController extends Controller
             DB::commit();
 
             return back()->with('success', "Successfully accepted {$acceptedCount} selected items from upload #{$temporaryUpload->id} into ItemBulk #{$itemBulk->id}. " . 
-                                         ($codItems->count() > 0 ? "Receipt created for COD items." : ""));
+                                         "Receipt created for all accepted items.");
 
         } catch (\Exception $e) {
             DB::rollback();

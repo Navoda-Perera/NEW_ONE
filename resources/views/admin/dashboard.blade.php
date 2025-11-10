@@ -108,38 +108,6 @@
                 </div>
             </div>
         </div>
-
-        <div class="col-md-3">
-            <div class="card bg-light text-dark">
-                <div class="card-body">
-                    <div class="d-flex justify-content-between">
-                        <div>
-                            <h4>{{ $internalUsers }}</h4>
-                            <p class="mb-0">Internal Users</p>
-                        </div>
-                        <div class="align-self-center">
-                            <i class="bi bi-building fs-1"></i>
-                        </div>
-                    </div>
-                </div>
-            </div>
-        </div>
-
-        <div class="col-md-3">
-            <div class="card bg-dark text-white">
-                <div class="card-body">
-                    <div class="d-flex justify-content-between">
-                        <div>
-                            <h4>{{ $externalUsers }}</h4>
-                            <p class="mb-0">External Users</p>
-                        </div>
-                        <div class="align-self-center">
-                            <i class="bi bi-globe fs-1"></i>
-                        </div>
-                    </div>
-                </div>
-            </div>
-        </div>
     </div>
 
     <div class="row mt-4">

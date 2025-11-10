@@ -1,81 +1,68 @@
-@extends('layouts.app')
+@extends('layouts.modern-pm')
 
 @section('title', 'Item Management')
 
-@section('nav-links')
-    <li class="nav-item">
-        <a class="nav-link" href="{{ route('pm.dashboard') }}">
-            <i class="bi bi-speedometer2"></i> Dashboard
-        </a>
-    </li>
-    <li class="nav-item">
-        <a class="nav-link" href="{{ route('pm.customers.index') }}">
-            <i class="bi bi-people"></i> Customers
-        </a>
-    </li>
-    <li class="nav-item">
-        <a class="nav-link" href="{{ route('pm.single-item.index') }}">
-            <i class="bi bi-box-seam"></i> Add Single Item
-        </a>
-    </li>
-    <li class="nav-item">
-        <a class="nav-link active" href="{{ route('pm.item-management.index') }}">
-            <i class="bi bi-search"></i> Item Management
-        </a>
-    </li>
-    <li class="nav-item">
-        <a class="nav-link" href="{{ route('pm.bulk-upload') }}">
-            <i class="bi bi-cloud-upload"></i> Bulk Upload
-        </a>
-    </li>
-    <li class="nav-item">
-        <a class="nav-link" href="{{ route('pm.postmen.index') }}">
-            <i class="bi bi-person-badge"></i> Postmen
-        </a>
-    </li>
-@endsection
-
 @section('content')
 <div class="container-fluid">
-    <div class="row">
+    <!-- Modern Header Section -->
+    <div class="row mb-4">
         <div class="col-12">
-            <div class="d-flex justify-content-between align-items-center mb-4">
-                <h1 class="h3 mb-0 text-gray-800">Item Management</h1>
-                <nav aria-label="breadcrumb">
-                    <ol class="breadcrumb">
-                        <li class="breadcrumb-item"><a href="{{ route('pm.dashboard') }}">Dashboard</a></li>
-                        <li class="breadcrumb-item active">Item Management</li>
-                    </ol>
-                </nav>
+            <div class="bg-info text-white p-4 rounded-top">
+                <div class="row align-items-center">
+                    <div class="col-12 text-center">
+                        <h2 class="mb-1">
+                            <i class="bi bi-search-heart"></i>
+                            Item Management System
+                        </h2>
+                        <p class="mb-0 opacity-75">Search, view, and manage postal items using barcode scanner</p>
+                    </div>
+                </div>
             </div>
         </div>
     </div>
 
     <!-- Barcode Scanner Section -->
-    <div class="row mb-4">
+    <div class="row">
         <div class="col-12">
-            <div class="card shadow-sm border-primary">
-                <div class="card-header bg-primary text-white">
-                    <h5 class="card-title mb-0">
-                        <i class="bi bi-upc-scan"></i> Barcode Scanner - Item Management
-                    </h5>
-                </div>
-                <div class="card-body">
-                    <div class="alert alert-info">
-                        <i class="bi bi-info-circle"></i>
-                        <strong>Instructions:</strong> Enter or scan a barcode to find and update item details instantly.
+            <div class="card border-0 shadow">
+                <div class="card-header bg-gradient text-white p-4" style="background: linear-gradient(135deg, #17a2b8, #138496);">
+                    <div class="row align-items-center">
+                        <div class="col-12 text-center">
+                            <h4 class="mb-0">
+                                <i class="bi bi-upc-scan fs-3 me-2"></i>
+                                Barcode Scanner
+                            </h4>
+                        </div>
                     </div>
+                </div>
 
-                    <form id="barcodeSearchForm">
-                        <div class="row align-items-end">
-                            <div class="col-md-8">
-                                <label for="barcode" class="form-label">Enter or Scan Barcode</label>
-                                <input type="text" class="form-control form-control-lg" id="barcode" name="barcode"
-                                       placeholder="Scan barcode or enter manually..." autofocus>
+                <div class="card-body p-4">
+                    <!-- Search Form -->
+                    <form id="barcodeSearchForm" class="mb-4">
+                        <div class="row g-3">
+                            <div class="col-md-9">
+                                <label for="barcode" class="form-label fw-bold text-dark">
+                                    <i class="bi bi-qr-code-scan"></i> Enter or Scan Barcode
+                                </label>
+                                <div class="input-group input-group-lg">
+                                    <span class="input-group-text bg-info text-white">
+                                        <i class="bi bi-upc-scan"></i>
+                                    </span>
+                                    <input type="text" class="form-control" id="barcode" name="barcode"
+                                           placeholder="Scan barcode or type manually..." autofocus>
+                                </div>
+                                <small class="text-muted">
+                                    <i class="bi bi-lightbulb"></i> Tip: Focus on this field and scan directly, or type the barcode manually
+                                </small>
                             </div>
-                            <div class="col-md-4">
-                                <button type="submit" class="btn btn-primary btn-lg w-100">
+                            <div class="col-md-3 d-flex align-items-end">
+                                <button type="submit" class="btn btn-info btn-lg w-100 shadow">
                                     <i class="bi bi-search"></i> Search Item
+                                </button>
+                            </div>
+                            <div class="col-md-12 mt-2">
+                                <button type="button" class="btn btn-warning btn-sm" onclick="testSearch()">
+                                    🔧 Test Search (Debug)
                                 </button>
                             </div>
                         </div>
@@ -83,33 +70,42 @@
 
                     <!-- Search Results -->
                     <div id="searchResults" class="mt-4" style="display: none;">
-                        <div class="alert alert-info">
-                            <div class="d-flex justify-content-between align-items-center">
-                                <div>
-                                    <strong>Search Results:</strong>
-                                    <span id="searchMessage"></span>
+                        <div class="card border-info">
+                            <div class="card-header bg-info text-white">
+                                <div class="d-flex justify-content-between align-items-center">
+                                    <div>
+                                        <i class="bi bi-search"></i>
+                                        <strong>Search Results</strong>
+                                    </div>
+                                    <button type="button" class="btn-close btn-close-white" onclick="clearSearch()"></button>
                                 </div>
-                                <button type="button" class="btn-close" onclick="clearSearch()"></button>
+                            </div>
+                            <div class="card-body">
+                                <div id="searchMessage" class="mb-3"></div>
+                                <div id="itemDetails"></div>
                             </div>
                         </div>
-                        <div id="itemDetails"></div>
                     </div>
                 </div>
             </div>
         </div>
     </div>
 </div>
-
 @endsection
 
-@push('scripts')
+@section('scripts')
 <script>
 $(document).ready(function() {
+    console.log('Document ready - jQuery loaded successfully');
+    console.log('Search route URL:', '{{ route("pm.item-management.search-barcode") }}');
+    console.log('CSRF Token:', '{{ csrf_token() }}');
+    
     // Auto-focus on barcode input
     $('#barcode').focus();
 
     // Handle barcode form submission
     $('#barcodeSearchForm').on('submit', function(e) {
+        console.log('Form submitted');
         e.preventDefault();
         searchByBarcode();
     });
@@ -117,6 +113,7 @@ $(document).ready(function() {
     // Auto-submit on barcode scan (assuming barcode scanner sends Enter)
     $('#barcode').on('keypress', function(e) {
         if (e.which === 13) { // Enter key
+            console.log('Enter key pressed');
             setTimeout(function() {
                 searchByBarcode();
             }, 100);
@@ -129,13 +126,29 @@ function searchByBarcode() {
     console.log('Searching for barcode:', barcode);
 
     if (!barcode) {
-        alert('Please enter a barcode');
+        // Enhanced error display
+        $('#searchResults').show();
+        $('#searchMessage').html(`
+            <div class="alert alert-warning border-0 mb-0">
+                <i class="bi bi-exclamation-triangle-fill"></i>
+                <strong>Please enter a barcode</strong> to search for items.
+            </div>
+        `);
+        $('#itemDetails').html('');
+        $('#barcode').focus();
         return;
     }
 
-    // Show loading
+    // Show modern loading
     $('#searchResults').show();
-    $('#searchMessage').html('<i class="spinner-border spinner-border-sm"></i> Searching...');
+    $('#searchMessage').html(`
+        <div class="d-flex align-items-center text-info">
+            <div class="spinner-border spinner-border-sm me-2" role="status">
+                <span class="visually-hidden">Loading...</span>
+            </div>
+            <strong>Searching for item with barcode: ${barcode}</strong>
+        </div>
+    `);
     $('#itemDetails').html('');
 
     console.log('Making AJAX request to:', '{{ route("pm.item-management.search-barcode") }}');
@@ -147,154 +160,251 @@ function searchByBarcode() {
             barcode: barcode,
             _token: '{{ csrf_token() }}'
         },
+        beforeSend: function() {
+            console.log('AJAX request starting...');
+            console.log('URL:', '{{ route("pm.item-management.search-barcode") }}');
+            console.log('Data:', {
+                barcode: barcode,
+                _token: '{{ csrf_token() }}'
+            });
+        },
         success: function(response) {
             console.log('AJAX Success Response:', response);
+            console.log('Response type:', typeof response);
+            console.log('Response success:', response.success);
+            
             if (response.success) {
-                $('#searchMessage').html(response.message);
+                $('#searchMessage').html(`
+                    <div class="alert alert-success border-0 mb-0">
+                        <i class="bi bi-check-circle-fill"></i>
+                        <strong>${response.message}</strong>
+                    </div>
+                `);
+                console.log('About to call displayItemDetails with:', response.item, response.type);
                 displayItemDetails(response.item, response.type);
             } else {
-                $('#searchMessage').html('<span class="text-danger">' + response.message + '</span>');
+                $('#searchMessage').html(`
+                    <div class="alert alert-warning border-0 mb-0">
+                        <i class="bi bi-search"></i>
+                        <strong>${response.message}</strong>
+                    </div>
+                `);
                 $('#itemDetails').html('');
             }
         },
-        error: function(xhr) {
+        error: function(xhr, status, error) {
             console.log('AJAX Error:', xhr);
+            console.log('Status:', status);
+            console.log('Error:', error);
             console.log('Response Text:', xhr.responseText);
-            console.log('Status:', xhr.status);
-            $('#searchMessage').html('<span class="text-danger">Error searching for item. Status: ' + xhr.status + '</span>');
-            $('#itemDetails').html('');
-
-            // Show more detailed error information
-            if (xhr.responseText) {
-                try {
-                    const errorResponse = JSON.parse(xhr.responseText);
-                    console.log('Parsed Error Response:', errorResponse);
-                    if (errorResponse.message) {
-                        $('#searchMessage').html('<span class="text-danger">Error: ' + errorResponse.message + '</span>');
-                    }
-                } catch (e) {
-                    console.log('Could not parse error response');
-                }
+            console.log('Status Code:', xhr.status);
+            
+            let errorMessage = 'Error searching for item. Please try again.';
+            
+            if (xhr.status === 419) {
+                errorMessage = 'CSRF token mismatch. Please refresh the page.';
+            } else if (xhr.status === 422) {
+                errorMessage = 'Validation error. Please check your input.';
+            } else if (xhr.status === 500) {
+                errorMessage = 'Server error. Please contact support.';
             }
+            
+            $('#searchMessage').html(`
+                <div class="alert alert-danger border-0 mb-0">
+                    <i class="bi bi-exclamation-triangle-fill"></i>
+                    <strong>${errorMessage}</strong> (Status: ${xhr.status})
+                </div>
+            `);
+            $('#itemDetails').html('');
         }
     });
 }
 
 function displayItemDetails(item, type) {
-    let html = '<div class="card">';
-    html += '<div class="card-body">';
+    console.log('displayItemDetails called with:', {item: item, type: type});
+    
+    if (!item) {
+        console.error('Item is null or undefined');
+        return;
+    }
+    
+    let html = '<div class="card border-0 shadow-sm">';
+    html += '<div class="card-header bg-light border-bottom">';
+    html += '<h5 class="mb-0 text-dark">';
+    html += '<i class="bi bi-box-seam-fill text-info"></i> Item Details';
+    html += '</h5>';
+    html += '</div>';
+    html += '<div class="card-body p-4">';
+
+    console.log('Processing item type:', type);
 
     if (type === 'processed') {
-        // Main item details with inline editing capability
+        console.log('Displaying processed item details');
+        // Main item details with modern styling
         html += '<div class="row">';
         html += '<div class="col-md-8">';
-        html += '<form id="updateItemForm" data-item-id="' + item.id + '">';
+        html += '<form id="updateItemForm" data-item-id="' + item.id + '" class="needs-validation" novalidate>';
+
+        // Modern form sections
+        html += '<div class="mb-4">';
+        html += '<h6 class="text-info border-bottom pb-2 mb-3">';
+        html += '<i class="bi bi-upc-scan"></i> Barcode Information</h6>';
+        html += '<input type="text" class="form-control form-control-lg" name="barcode" value="' + (item.barcode || '') + '" required>';
+        html += '</div>';
+
+        html += '<div class="mb-4">';
+        html += '<h6 class="text-info border-bottom pb-2 mb-3">';
+        html += '<i class="bi bi-person-fill"></i> Receiver Information</h6>';
         html += '<div class="row">';
-
-        // Barcode row
         html += '<div class="col-12 mb-3">';
-        html += '<label class="form-label"><strong>Barcode</strong></label>';
-        html += '<input type="text" class="form-control" name="barcode" value="' + item.barcode + '" required>';
+        html += '<label class="form-label fw-bold">Receiver Name</label>';
+        html += '<input type="text" class="form-control" name="receiver_name" value="' + (item.receiver_name || '') + '" required>';
+        html += '</div>';
+        html += '<div class="col-12 mb-3">';
+        html += '<label class="form-label fw-bold">Receiver Address</label>';
+        html += '<textarea class="form-control" name="receiver_address" rows="3" required>' + (item.receiver_address || '') + '</textarea>';
+        html += '</div>';
+        html += '</div>';
         html += '</div>';
 
-        // Receiver Name
-        html += '<div class="col-12 mb-3">';
-        html += '<label class="form-label"><strong>Receiver Name</strong></label>';
-        html += '<input type="text" class="form-control" name="receiver_name" value="' + item.receiver_name + '" required>';
-        html += '</div>';
-
-        // Receiver Address
-        html += '<div class="col-12 mb-3">';
-        html += '<label class="form-label"><strong>Receiver Address</strong></label>';
-        html += '<textarea class="form-control" name="receiver_address" rows="3" required>' + item.receiver_address + '</textarea>';
-        html += '</div>';
-
-        // Weight and Amount row
+        html += '<div class="mb-4">';
+        html += '<h6 class="text-info border-bottom pb-2 mb-3">';
+        html += '<i class="bi bi-box"></i> Item Details</h6>';
+        html += '<div class="row">';
         html += '<div class="col-md-6 mb-3">';
-        html += '<label class="form-label"><strong>Weight (grams)</strong></label>';
-        html += '<input type="number" class="form-control" name="weight" value="' + item.weight + '" min="0" step="0.01" required>';
+        html += '<label class="form-label fw-bold">Weight (grams)</label>';
+        html += '<div class="input-group">';
+        html += '<input type="number" class="form-control" name="weight" value="' + (item.weight || '') + '" min="0" step="0.01" required>';
+        html += '<span class="input-group-text">g</span>';
+        html += '</div>';
         html += '</div>';
         html += '<div class="col-md-6 mb-3">';
-        html += '<label class="form-label"><strong>Amount (Rs.)</strong></label>';
-        html += '<input type="number" class="form-control" name="amount" value="' + item.amount + '" min="0" step="0.01" required>';
+        html += '<label class="form-label fw-bold">Amount</label>';
+        html += '<div class="input-group">';
+        html += '<span class="input-group-text">Rs.</span>';
+        html += '<input type="number" class="form-control" name="amount" value="' + (item.amount || '') + '" min="0" step="0.01" required>';
+        html += '</div>';
+        html += '</div>';
+        html += '</div>';
         html += '</div>';
 
-        html += '</div>'; // End row
         html += '</form>';
         html += '</div>';
 
-        // Item Info Panel
+        // Modern info panel
         html += '<div class="col-md-4">';
-        html += '<div class="card bg-light">';
-        html += '<div class="card-header"><h6 class="mb-0">Item Information</h6></div>';
+        html += '<div class="card bg-light border-0">';
+        html += '<div class="card-header bg-info text-white">';
+        html += '<h6 class="mb-0"><i class="bi bi-info-circle"></i> Item Status</h6>';
+        html += '</div>';
         html += '<div class="card-body">';
-        html += '<p><strong>Original Barcode:</strong> <code>' + item.barcode + '</code></p>';
+        html += '<div class="mb-3">';
+        html += '<small class="text-muted d-block">Barcode</small>';
+        html += '<code class="fs-6">' + (item.barcode || '') + '</code>';
+        html += '</div>';
+
         if (item.creator) {
-            html += '<p><strong>Customer:</strong> ' + item.creator.name + '</p>';
+            html += '<div class="mb-3">';
+            html += '<small class="text-muted d-block">Customer</small>';
+            html += '<strong>' + (item.creator.name || 'N/A') + '</strong>';
+            html += '</div>';
         }
-        html += '<p><strong>Created:</strong> ' + new Date(item.created_at).toLocaleString() + '</p>';
-        html += '<p><strong>Updated:</strong> ' + new Date(item.updated_at).toLocaleString() + '</p>';
+
+        html += '<div class="mb-3">';
+        html += '<small class="text-muted d-block">Created</small>';
+        html += '<span>' + (item.created_at ? new Date(item.created_at).toLocaleString() : 'N/A') + '</span>';
+        html += '</div>';
+        html += '<div class="mb-0">';
+        html += '<small class="text-muted d-block">Last Updated</small>';
+        html += '<span>' + (item.updated_at ? new Date(item.updated_at).toLocaleString() : 'N/A') + '</span>';
+        html += '</div>';
         html += '</div>';
         html += '</div>';
         html += '</div>';
         html += '</div>';
 
-        // Action buttons
-        html += '<div class="mt-4">';
-        html += '<div class="d-flex gap-2">';
-        html += '<button type="button" class="btn btn-success" onclick="updateItemInline(' + item.id + ')">';
-        html += '<i class="bi bi-check-circle"></i> Update Item</button>';
-
-        html += '<a href="{{ route("pm.item-management.edit", ":id") }}" class="btn btn-warning">'.replace(':id', item.id);
-        html += '<i class="bi bi-pencil"></i> Full Edit</a>';
-
+        // Modern action buttons
+        html += '<div class="mt-4 pt-3 border-top">';
+        html += '<div class="d-flex gap-2 flex-wrap">';
+        html += '<button type="button" class="btn btn-success btn-lg shadow-sm" onclick="updateItemInline(' + item.id + ')">';
+        html += '<i class="bi bi-check-circle-fill"></i> Update Item</button>';
         if (!['dispatched', 'delivered'].includes(item.status)) {
-            html += '<button type="button" class="btn btn-danger" onclick="deleteItem(' + item.id + ')">';
-            html += '<i class="bi bi-trash"></i> Delete Item</button>';
+            html += '<button type="button" class="btn btn-danger btn-lg shadow-sm" onclick="deleteItem(' + item.id + ')">';
+            html += '<i class="bi bi-trash-fill"></i> Delete</button>';
         }
-
-        html += '<button type="button" class="btn btn-secondary" onclick="clearSearch()">';
+        html += '<button type="button" class="btn btn-secondary btn-lg shadow-sm" onclick="clearSearch()">';
         html += '<i class="bi bi-arrow-left"></i> Search Another</button>';
         html += '</div>';
         html += '</div>';
 
     } else if (type === 'temporary') {
-        // Temporary item details - read-only with process option
-        html += '<div class="alert alert-warning">';
-        html += '<i class="bi bi-exclamation-triangle"></i> This item is in temporary status and not yet processed.';
+        console.log('Displaying temporary item details');
+        // Modern temporary item display
+        html += '<div class="alert alert-warning border-0 mb-4">';
+        html += '<i class="bi bi-exclamation-triangle-fill"></i> ';
+        html += '<strong>Temporary Item</strong> - This item needs to be processed.';
         html += '</div>';
+
         html += '<div class="row">';
         html += '<div class="col-md-8">';
-        html += '<h6>Item Information</h6>';
-        html += '<p><strong>Barcode:</strong> <code>' + (item.barcode || 'Not assigned') + '</code></p>';
-        html += '<p><strong>Receiver:</strong> ' + item.receiver_name + '</p>';
-        html += '<p><strong>Address:</strong> ' + item.receiver_address + '</p>';
-        html += '<p><strong>Weight:</strong> ' + item.weight + 'g</p>';
-        html += '<p><strong>Amount:</strong> Rs. ' + parseFloat(item.amount || 0).toFixed(2) + '</p>';
-        html += '<p><strong>Status:</strong> <span class="badge bg-warning">' + item.status + '</span></p>';
+        html += '<h6 class="text-warning border-bottom pb-2 mb-3">';
+        html += '<i class="bi bi-clock-history"></i> Item Information</h6>';
+
+        const detailItems = [
+            { label: 'Barcode', value: item.barcode || 'Not assigned', icon: 'upc-scan' },
+            { label: 'Receiver', value: item.receiver_name || 'N/A', icon: 'person-fill' },
+            { label: 'Address', value: item.receiver_address || 'N/A', icon: 'geo-alt-fill' },
+            { label: 'Weight', value: (item.weight || '0') + 'g', icon: 'box' },
+            { label: 'Amount', value: 'Rs. ' + parseFloat(item.amount || 0).toFixed(2), icon: 'currency-dollar' }
+        ];
+
+        detailItems.forEach(detail => {
+            html += '<div class="mb-3 p-3 bg-light rounded">';
+            html += '<div class="d-flex align-items-center">';
+            html += '<i class="bi bi-' + detail.icon + ' text-warning me-2"></i>';
+            html += '<small class="text-muted me-2">' + detail.label + ':</small>';
+            html += '<strong>' + detail.value + '</strong>';
+            html += '</div>';
+            html += '</div>';
+        });
+
         html += '</div>';
         html += '<div class="col-md-4">';
-        html += '<h6>Upload Information</h6>';
+        html += '<div class="card bg-warning bg-opacity-10 border-warning">';
+        html += '<div class="card-header border-warning">';
+        html += '<h6 class="mb-0 text-warning"><i class="bi bi-upload"></i> Upload Info</h6>';
+        html += '</div>';
+        html += '<div class="card-body">';
+
         if (item.temporary_upload && item.temporary_upload.user) {
-            html += '<p><strong>Customer:</strong> ' + item.temporary_upload.user.name + '</p>';
+            html += '<p><strong>Customer:</strong><br>' + (item.temporary_upload.user.name || 'N/A') + '</p>';
         }
-        html += '<p><strong>Service Type:</strong> ' + (item.service_type || 'N/A') + '</p>';
-        html += '<p><strong>Created:</strong> ' + new Date(item.created_at).toLocaleString() + '</p>';
+        html += '<p><strong>Service:</strong><br>' + (item.service_type || 'Standard') + '</p>';
+        html += '<p><strong>Status:</strong><br><span class="badge bg-warning">' + (item.status || 'pending') + '</span></p>';
+        html += '<p class="mb-0"><strong>Created:</strong><br>' + (item.created_at ? new Date(item.created_at).toLocaleString() : 'N/A') + '</p>';
+
+        html += '</div>';
+        html += '</div>';
         html += '</div>';
         html += '</div>';
 
-        html += '<div class="mt-3">';
-        html += '<button type="button" class="btn btn-primary" onclick="processTemporaryItem(' + item.id + ')">';
-        html += '<i class="bi bi-gear"></i> Process Item</button>';
-        html += '<button type="button" class="btn btn-secondary" onclick="clearSearch()">';
+        html += '<div class="mt-4 pt-3 border-top">';
+        html += '<div class="d-flex gap-2">';
+        html += '<button type="button" class="btn btn-primary btn-lg shadow-sm" onclick="processTemporaryItem(' + item.id + ')">';
+        html += '<i class="bi bi-gear-fill"></i> Process Item</button>';
+        html += '<button type="button" class="btn btn-secondary btn-lg shadow-sm" onclick="clearSearch()">';
         html += '<i class="bi bi-arrow-left"></i> Search Another</button>';
+        html += '</div>';
         html += '</div>';
     }
 
     html += '</div>';
     html += '</div>';
 
+    console.log('Generated HTML length:', html.length);
+    console.log('Setting HTML to #itemDetails');
     $('#itemDetails').html(html);
+    console.log('displayItemDetails completed');
 }
 
 function clearSearch() {
@@ -314,7 +424,7 @@ function updateItemInline(itemId) {
         _method: 'PUT'
     };
 
-    // Show loading
+    // Modern loading state
     const updateBtn = $('button[onclick="updateItemInline(' + itemId + ')"]');
     const originalText = updateBtn.html();
     updateBtn.html('<i class="spinner-border spinner-border-sm"></i> Updating...').prop('disabled', true);
@@ -325,25 +435,21 @@ function updateItemInline(itemId) {
         data: formData,
         success: function(response) {
             if (response.success) {
-                // Show success message
-                $('#searchMessage').html('<span class="text-success">' + response.message + '</span>');
+                // Update search message with success
+                $('#searchMessage').html(`
+                    <div class="alert alert-success border-0 mb-0">
+                        <i class="bi bi-check-circle-fill"></i>
+                        <strong>${response.message}</strong>
+                    </div>
+                `);
 
-                // Update the display with new data
+                // Refresh the display
                 displayItemDetails(response.item, 'processed');
 
-                // Show success alert
-                const successAlert = '<div class="alert alert-success alert-dismissible fade show mt-3">' +
-                    '<strong>Success!</strong> Item updated successfully.' +
-                    '<button type="button" class="btn-close" data-bs-dismiss="alert"></button>' +
-                    '</div>';
-                $('#itemDetails').prepend(successAlert);
-
-                // Auto-hide success alert after 3 seconds
-                setTimeout(function() {
-                    $('.alert-success').fadeOut();
-                }, 3000);
+                // Show floating success notification
+                showNotification('Item updated successfully!', 'success');
             } else {
-                alert('Error: ' + (response.message || 'Failed to update item'));
+                showNotification('Error: ' + (response.message || 'Failed to update item'), 'error');
                 updateBtn.html(originalText).prop('disabled', false);
             }
         },
@@ -353,19 +459,10 @@ function updateItemInline(itemId) {
                 const errors = Object.values(xhr.responseJSON.errors).flat();
                 errorMessage = errors.join(', ');
             }
-            alert(errorMessage);
+            showNotification(errorMessage, 'error');
             updateBtn.html(originalText).prop('disabled', false);
         }
     });
-}
-
-function processTemporaryItem(tempItemId) {
-    if (!confirm('Do you want to process this temporary item and move it to the main system?')) {
-        return;
-    }
-
-    // This would need to be implemented based on your existing temporary item processing logic
-    alert('Processing temporary items is not yet implemented in this interface. Please use the regular PM workflow.');
 }
 
 function deleteItem(itemId) {
@@ -381,16 +478,111 @@ function deleteItem(itemId) {
         },
         success: function(response) {
             if (response.success) {
-                alert(response.message);
-                clearSearch(); // Clear the search and go back to scanner
+                showNotification('Item deleted successfully!', 'success');
+                clearSearch();
             } else {
-                alert('Error: ' + response.message);
+                showNotification('Error: ' + (response.message || 'Failed to delete item'), 'error');
             }
         },
-        error: function() {
-            alert('Error deleting item');
+        error: function(xhr) {
+            showNotification('Error deleting item. Please try again.', 'error');
+        }
+    });
+}
+
+function processTemporaryItem(tempItemId) {
+    if (!confirm('Do you want to process this temporary item and move it to the main system?')) {
+        return;
+    }
+    showNotification('Processing temporary items is not yet implemented in this interface.', 'info');
+}
+
+function showNotification(message, type) {
+    const alertClass = type === 'success' ? 'alert-success' : type === 'error' ? 'alert-danger' : 'alert-info';
+    const icon = type === 'success' ? 'check-circle-fill' : type === 'error' ? 'exclamation-triangle-fill' : 'info-circle-fill';
+
+    const notification = `
+        <div class="alert ${alertClass} border-0 shadow position-fixed"
+             style="top: 20px; right: 20px; z-index: 1050; min-width: 300px;"
+             id="notification-${Date.now()}">
+            <div class="d-flex align-items-center">
+                <i class="bi bi-${icon} me-2"></i>
+                <div class="flex-grow-1">${message}</div>
+                <button type="button" class="btn-close ms-2" onclick="this.parentElement.parentElement.remove()"></button>
+            </div>
+        </div>
+    `;
+
+    $('body').append(notification);
+
+    // Auto remove after 5 seconds
+    setTimeout(() => {
+        $(`#notification-${Date.now()}`).fadeOut(() => {
+            $(this).remove();
+        });
+    }, 5000);
+}
+
+// Test function to debug search issues
+function testSearch() {
+    console.log('=== TEST SEARCH FUNCTION ===');
+    
+    // Check if jQuery is working
+    if (typeof $ === 'undefined') {
+        alert('jQuery is not loaded!');
+        return;
+    }
+    
+    // Set test barcode
+    $('#barcode').val('bn675111');
+    
+    // Test if we can show the search results div
+    $('#searchResults').show();
+    $('#searchMessage').html('<div class="alert alert-info">🔧 Testing AJAX request...</div>');
+    
+    // Test AJAX call
+    console.log('Testing AJAX call...');
+    
+    $.ajax({
+        url: '{{ route("pm.item-management.search-barcode") }}',
+        method: 'POST',
+        data: {
+            barcode: 'bn675111',
+            _token: '{{ csrf_token() }}'
+        },
+        beforeSend: function(xhr) {
+            console.log('AJAX beforeSend triggered');
+            console.log('Headers:', xhr.getAllResponseHeaders());
+        },
+        success: function(data) {
+            console.log('✅ AJAX Success:', data);
+            $('#searchMessage').html('<div class="alert alert-success">✅ AJAX Success! Check console for response.</div>');
+            
+            if (data.success) {
+                displayItemDetails(data.item, data.type);
+            }
+        },
+        error: function(xhr, status, error) {
+            console.log('❌ AJAX Error:', {
+                status: status,
+                error: error,
+                statusCode: xhr.status,
+                responseText: xhr.responseText,
+                readyState: xhr.readyState
+            });
+            
+            $('#searchMessage').html(`
+                <div class="alert alert-danger">
+                    ❌ AJAX Error: ${status} (${xhr.status})<br>
+                    Error: ${error}<br>
+                    Response: ${xhr.responseText}
+                </div>
+            `);
+        },
+        complete: function() {
+            console.log('AJAX request completed');
         }
     });
 }
 </script>
-@endpush
+@endsection

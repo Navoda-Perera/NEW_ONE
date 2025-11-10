@@ -3,7 +3,6 @@
 require_once 'vendor/autoload.php';
 
 use Illuminate\Support\Facades\DB;
-use Illuminate\Support\Facades\Artisan;
 
 // Initialize Laravel
 $app = require_once 'bootstrap/app.php';
