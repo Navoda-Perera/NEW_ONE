@@ -16,11 +16,6 @@
                         </h4>
                         <small class="opacity-75">Standard courier service with weight-based pricing</small>
                     </div>
-                    <div class="col-md-6 text-end">
-                        <span class="badge bg-light text-primary fs-6">
-                            <i class="bi bi-geo-alt-fill"></i> {{ auth()->user()->location->name ?? 'Unknown Location' }}
-                        </span>
-                    </div>
                 </div>
             </div>
 

@@ -27,12 +27,17 @@ class PMDashboardController extends Controller
             return redirect()->route('pm.login')->with('error', 'Please login to access the dashboard.');
         }
 
-        // Get customer statistics
-        $customerUsers = User::where('role', 'customer')->count();
+        // Get customer statistics for PM's location only
+        $customerUsers = User::where('role', 'customer')
+                            ->where('location_id', $currentUser->location_id)
+                            ->count();
         $activeCustomers = User::where('role', 'customer')
+                               ->where('location_id', $currentUser->location_id)
                                ->where('is_active', true)
                                ->count();
-        $externalCustomers = User::where('role', 'external_customer')->count();
+        $externalCustomers = User::where('role', 'external_customer')
+                                ->where('location_id', $currentUser->location_id)
+                                ->count();
 
         // Get pending items count for PM's location
         $pendingItemsCount = TemporaryUploadAssociate::where('status', 'pending')

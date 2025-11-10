@@ -182,6 +182,28 @@
                             </div>
 
                             <div class="form-floating mb-3">
+                                <select 
+                                    class="form-select @error('location_id') is-invalid @enderror" 
+                                    id="location_id" 
+                                    name="location_id"
+                                    required
+                                >
+                                    <option value="">Choose your nearest post office</option>
+                                    @foreach($locations as $location)
+                                        <option value="{{ $location->id }}" {{ old('location_id') == $location->id ? 'selected' : '' }}>
+                                            {{ $location->name }} ({{ $location->code }}) - {{ $location->city }}
+                                        </option>
+                                    @endforeach
+                                </select>
+                                <label for="location_id">
+                                    <i class="bi bi-geo-alt me-2"></i>Assigned Post Office
+                                </label>
+                                @error('location_id')
+                                    <div class="invalid-feedback">{{ $message }}</div>
+                                @enderror
+                            </div>
+
+                            <div class="form-floating mb-3">
                                 <input
                                     type="password"
                                     class="form-control @error('password') is-invalid @enderror"

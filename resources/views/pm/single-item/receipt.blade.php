@@ -86,34 +86,29 @@
                                 <h6 class="text-primary mb-3">Payment Summary</h6>
 
                                 @if($receipt->itemBulk->service_type === 'cod')
-                                    @php
-                                        $item = $receipt->itemBulk->items->first();
-                                        // Parse COD details from notes or calculate from amount
-                                        $notes = $receipt->itemBulk->notes;
-                                        preg_match('/COD Amount: LKR ([\d.]+)/', $notes, $codMatches);
-                                        preg_match('/Postage: LKR ([\d.]+)/', $notes, $postageMatches);
-                                        $codAmount = isset($codMatches[1]) ? $codMatches[1] : 0;
-                                        $postage = isset($postageMatches[1]) ? $postageMatches[1] : 0;
-                                    @endphp
                                     <div class="d-flex justify-content-between mb-2">
                                         <span>COD Amount:</span>
-                                        <span>LKR {{ number_format($codAmount, 2) }}</span>
+                                        <span>LKR {{ number_format($receipt->amount, 2) }}</span>
                                     </div>
                                     <div class="d-flex justify-content-between mb-2">
                                         <span>Postage:</span>
-                                        <span>LKR {{ number_format($postage, 2) }}</span>
+                                        <span>LKR {{ number_format($receipt->postage, 2) }}</span>
                                     </div>
                                     <hr class="my-2">
+                                    <div class="d-flex justify-content-between mb-2">
+                                        <span><strong>Total Amount:</strong></span>
+                                        <span><strong>LKR {{ number_format($receipt->total_amount, 2) }}</strong></span>
+                                    </div>
+                                @else
+                                    <div class="d-flex justify-content-between mb-2">
+                                        <span><strong>Total Postage:</strong></span>
+                                        <span><strong>LKR {{ number_format($receipt->postage, 2) }}</strong></span>
+                                    </div>
                                 @endif
 
                                 <div class="d-flex justify-content-between mb-2">
                                     <span>No. of Items:</span>
                                     <span>{{ $receipt->item_quantity }}</span>
-                                </div>
-
-                                <div class="d-flex justify-content-between mb-2">
-                                    <span><strong>Total Postage:</strong></span>
-                                    <span><strong>LKR {{ number_format($receipt->amount, 2) }}</strong></span>
                                 </div>
 
                                 <div class="d-flex justify-content-between">

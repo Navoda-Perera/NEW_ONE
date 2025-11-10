@@ -4,6 +4,7 @@ namespace App\Http\Controllers\Customer;
 
 use App\Http\Controllers\Controller;
 use App\Models\User;
+use App\Models\Location;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Hash;
@@ -50,7 +51,8 @@ class CustomerAuthController extends Controller
 
     public function showRegistrationForm()
     {
-        return view('customer.auth.register');
+        $locations = Location::orderBy('name')->get();
+        return view('customer.auth.register', compact('locations'));
     }
 
     public function register(Request $request)
@@ -62,6 +64,7 @@ class CustomerAuthController extends Controller
             'mobile' => 'required|string|max:15',
             'company_name' => 'required|string|max:255',
             'company_br' => 'required|string|max:50',
+            'location_id' => 'required|exists:locations,id',
             'password' => ['required', 'confirmed', Password::defaults()],
         ]);
 
@@ -72,6 +75,7 @@ class CustomerAuthController extends Controller
             'mobile' => $request->mobile,
             'company_name' => $request->company_name,
             'company_br' => $request->company_br,
+            'location_id' => $request->location_id,
             'password' => Hash::make($request->password),
             'user_type' => 'external',
             'role' => 'customer',

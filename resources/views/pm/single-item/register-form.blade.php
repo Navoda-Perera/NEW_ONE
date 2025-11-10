@@ -16,11 +16,6 @@
                         </h4>
                         <small class="opacity-75">Secure postal service with tracking and insurance</small>
                     </div>
-                    <div class="col-md-6 text-end">
-                        <span class="badge bg-light text-danger fs-6">
-                            <i class="bi bi-geo-alt-fill"></i> {{ auth()->user()->location->name ?? 'Unknown Location' }}
-                        </span>
-                    </div>
                 </div>
             </div>
 
