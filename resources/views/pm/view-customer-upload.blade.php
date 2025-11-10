@@ -108,18 +108,28 @@
                             @php
                                 $pendingItems = $upload->associates->where('status', 'pending');
                                 $pendingWithBarcodes = $pendingItems->whereNotNull('barcode')->where('barcode', '!=', '');
+                                $acceptedItems = $upload->associates->where('status', 'accept');
                             @endphp
 
-                            @if($pendingWithBarcodes->count() > 0)
-                                <div class="d-flex gap-2 justify-content-end">
+                            <div class="d-flex gap-2 justify-content-end flex-wrap">
+                                @if($acceptedItems->count() > 0)
+                                    <!-- Print Receipt Button for accepted items -->
+                                    <a href="{{ route('pm.view-customer-upload-receipt', $upload->id) }}"
+                                       class="btn btn-warning btn-lg shadow-sm"
+                                       title="View & Print Receipt">
+                                        <i class="bi bi-receipt"></i> Print Receipt ({{ $acceptedItems->count() }} items)
+                                    </a>
+                                @endif
+
+                                @if($pendingWithBarcodes->count() > 0)
                                     <button type="button" id="selectAllBtn" class="btn btn-light btn-lg shadow-sm" onclick="toggleSelectAll()">
                                         <i class="bi bi-check2-square"></i> Select All
                                     </button>
                                     <button type="button" id="acceptSelectedBtn" class="btn btn-success btn-lg shadow-sm" onclick="acceptSelected()" disabled>
                                         <i class="bi bi-check-circle"></i> Accept Selected (<span id="selectedCount">0</span>)
                                     </button>
-                                </div>
-                            @endif
+                                @endif
+                            </div>
                         </div>
                     </div>
                 </div>
@@ -257,10 +267,10 @@
                                                         </span>
                                                         <br><small class="text-success">Customer provided</small>
                                                     @else
-                                                        <span class="badge bg-danger fs-6 px-3 py-2">
+                                                        <span class="badge badge-pm-accent fs-6 px-3 py-2">
                                                             No Barcode
                                                         </span>
-                                                        <br><small class="text-danger">PM must add barcode first</small>
+                                                        <br><small class="text-muted">PM must add barcode first</small>
                                                     @endif
                                                 </td>
                                                 <td class="py-3">
@@ -300,7 +310,7 @@
                                                                 <i class="bi bi-check-circle"></i> Accepted
                                                             </span>
                                                         @else
-                                                            <span class="badge bg-danger fs-6 px-3 py-2">
+                                                            <span class="badge badge-pm-accent fs-6 px-3 py-2">
                                                                 <i class="bi bi-x-circle"></i> {{ ucfirst($item->status) }}
                                                             </span>
                                                         @endif

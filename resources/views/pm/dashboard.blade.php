@@ -28,11 +28,6 @@
             <i class="bi bi-cloud-upload"></i> Bulk Upload
         </a>
     </li>
-    <li class="nav-item">
-        <a class="nav-link" href="{{ route('pm.postmen.index') }}">
-            <i class="bi bi-person-badge"></i> Postmen
-        </a>
-    </li>
 @endsection
 
 @section('styles')
@@ -78,9 +73,6 @@
                             @if($pendingItemsCount > 0)
                                 <span class="badge bg-info text-dark ms-auto">{{ $pendingItemsCount }}</span>
                             @endif
-                        </a>
-                        <a href="{{ route('pm.postmen.index') }}" class="list-group-item list-group-item-action">
-                            <i class="bi bi-person-badge me-2"></i>Postmen
                         </a>
                     </div>
 
@@ -175,12 +167,6 @@
                                 <a href="{{ route('pm.customers.index') }}" class="btn btn-outline-primary btn-lg w-100 h-100 d-flex flex-column justify-content-center">
                                     <i class="bi bi-people display-6 mb-2"></i>
                                     <span>View Customers</span>
-                                </a>
-                            </div>
-                            <div class="col-md-6">
-                                <a href="{{ route('pm.postmen.index') }}" class="btn btn-outline-info btn-lg w-100 h-100 d-flex flex-column justify-content-center">
-                                    <i class="bi bi-person-badge display-6 mb-2"></i>
-                                    <span>View Postmen</span>
                                 </a>
                             </div>
                         </div>

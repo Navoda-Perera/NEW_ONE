@@ -21,9 +21,9 @@ echo "\n=== Testing PM Layout Reversion ===\n";
 $layoutFile = 'resources/views/layouts/modern-pm.blade.php';
 if (file_exists($layoutFile)) {
     echo "✅ Modern PM layout file exists\n";
-    
+
     $content = file_get_contents($layoutFile);
-    
+
     // Check that modern features are removed
     $removedFeatures = [
         'nav-section-title' => 'Navigation section titles',
@@ -37,7 +37,7 @@ if (file_exists($layoutFile)) {
         'bi-plus-circle-fill' => 'Filled icons',
         'bi-search-heart' => 'Special icons'
     ];
-    
+
     echo "--- Checking Removed Features ---\n";
     foreach ($removedFeatures as $feature => $description) {
         if (strpos($content, $feature) === false) {
@@ -46,7 +46,7 @@ if (file_exists($layoutFile)) {
             echo "❌ {$description} still present\n";
         }
     }
-    
+
     // Check that simple features are present
     $simpleFeatures = [
         'bi-speedometer2' => 'Dashboard icon',
@@ -55,11 +55,10 @@ if (file_exists($layoutFile)) {
         'bi-search' => 'Item Management icon',
         'bi-cloud-upload' => 'Bulk Upload icon',
         'bi-inbox' => 'Customer Uploads icon',
-        'bi-person-badge' => 'Postmen icon',
         'nav-link' => 'Navigation links',
         'notification-badge' => 'Simple notification badge'
     ];
-    
+
     echo "\n--- Checking Simple Features ---\n";
     foreach ($simpleFeatures as $feature => $description) {
         if (strpos($content, $feature) !== false) {
@@ -68,7 +67,7 @@ if (file_exists($layoutFile)) {
             echo "❌ {$description} missing\n";
         }
     }
-    
+
     // Check for simple styling
     echo "\n--- Checking Simple Styling ---\n";
     $simpleStyling = [
@@ -79,7 +78,7 @@ if (file_exists($layoutFile)) {
         'margin: 0.25rem 1rem' => 'Simple margins',
         'font-weight: 500' => 'Normal font weight'
     ];
-    
+
     foreach ($simpleStyling as $css => $feature) {
         if (strpos($content, $css) !== false) {
             echo "✅ {$feature}\n";
@@ -87,7 +86,7 @@ if (file_exists($layoutFile)) {
             echo "❌ {$feature} missing\n";
         }
     }
-    
+
 } else {
     echo "❌ Modern PM layout file missing\n";
 }
@@ -100,8 +99,7 @@ $pmRoutes = [
     'pm.bulk-upload' => 'Bulk Upload',
     'pm.customer-uploads' => 'Customer Uploads',
     'pm.customers.index' => 'Customers',
-    'pm.item-management.index' => 'Item Management',
-    'pm.postmen.index' => 'Postmen'
+    'pm.item-management.index' => 'Item Management'
 ];
 
 foreach ($pmRoutes as $route => $description) {

@@ -162,7 +162,7 @@
                     </div>
                     <div class="col-md-4 text-md-end">
                         <div class="pm-info">
-                            <span class="badge bg-danger bg-opacity-10 text-danger px-3 py-2">
+                            <span class="badge badge-pm-accent bg-opacity-10 text-muted px-3 py-2">
                                 <i class="bi bi-person-badge me-1"></i>
                                 PM: {{ $user->name }}
                             </span>

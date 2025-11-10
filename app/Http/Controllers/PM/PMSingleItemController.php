@@ -90,11 +90,13 @@ class PMSingleItemController extends Controller
                 'status' => 'accept'
             ]);
 
-            // Create Receipt (only item amount, no postage)
+            // Create Receipt with proper postage calculation
             $receipt = Receipt::create([
                 'item_quantity' => 1,
                 'item_bulk_id' => $itemBulk->id,
-                'amount' => 0, // SLP has no COD charges, only postage (which we don't include in receipt)
+                'amount' => 0, // SLP has no COD charges, only postage
+                'postage' => $postage, // Store calculated postage
+                'total_amount' => $postage, // For SLP, total = postage only
                 'payment_type' => 'cash',
                 'created_by' => $user->id,
                 'location_id' => $user->location_id,
@@ -165,11 +167,13 @@ class PMSingleItemController extends Controller
                 'status' => 'accept'
             ]);
 
-            // Create Receipt (only item amount, no postage)
+            // Create Receipt with proper postage and total calculation
             $receipt = Receipt::create([
                 'item_quantity' => 1,
                 'item_bulk_id' => $itemBulk->id,
-                'amount' => $request->amount, // Only item amount, no postage
+                'amount' => $request->amount, // COD amount
+                'postage' => $postage, // Store calculated postage
+                'total_amount' => $totalAmount, // COD amount + postage
                 'payment_type' => 'cash',
                 'created_by' => $user->id,
                 'location_id' => $user->location_id,
@@ -238,11 +242,13 @@ class PMSingleItemController extends Controller
                 'status' => 'accept'
             ]);
 
-            // Create Receipt (only item amount, no postage)
+            // Create Receipt with proper postage calculation
             $receipt = Receipt::create([
                 'item_quantity' => 1,
                 'item_bulk_id' => $itemBulk->id,
-                'amount' => 0, // Register Post has no COD charges, only postage (which we don't include in receipt)
+                'amount' => 0, // Register Post has no COD charges, only postage
+                'postage' => $postage, // Store calculated postage
+                'total_amount' => $postage, // For Register Post, total = postage only
                 'payment_type' => 'cash',
                 'created_by' => $user->id,
                 'location_id' => $user->location_id,

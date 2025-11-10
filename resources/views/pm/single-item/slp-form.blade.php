@@ -7,7 +7,7 @@
     <div class="row">
         <div class="col-12">
             <!-- Header Section -->
-            <div class="bg-primary text-white p-4 rounded-top">
+            <div class="bg-pm-secondary text-white p-4 rounded-top">
                 <div class="row align-items-center">
                     <div class="col-md-6">
                         <h4 class="mb-0">

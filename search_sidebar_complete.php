@@ -12,7 +12,7 @@ echo "   ✅ 500ms delay for better performance\n";
 echo "   ✅ Highlights search terms in results\n\n";
 
 echo "🎛️ Advanced Filters:\n";
-echo "   ✅ Filter by Role (Admin, PM, Postman, Customer)\n";
+echo "   ✅ Filter by Role (Admin, PM, Customer)\n";
 echo "   ✅ Filter by Type (Internal, External)\n";
 echo "   ✅ Clear all filters button\n";
 echo "   ✅ Preserves filters in URL\n\n";
@@ -79,7 +79,7 @@ echo "6. 👤 Check sidebar for user profile\n\n";
 echo "🔍 Example Searches:\n";
 echo "====================\n";
 echo "• Search '200' - finds users with NIC starting with 200\n";
-echo "• Filter Role 'postman' - shows only postmen\n";
+echo "• Filter Role 'customer' - shows only customers\n";
 echo "• Filter Type 'internal' - shows only internal users\n";
 echo "• Combine search + filters for precise results\n\n";
 

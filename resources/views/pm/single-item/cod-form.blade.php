@@ -7,7 +7,7 @@
     <div class="row">
         <div class="col-12">
             <!-- Header Section -->
-            <div class="bg-warning text-dark p-4 rounded-top">
+            <div class="bg-pm-accent text-white p-4 rounded-top">
                 <div class="row align-items-center">
                     <div class="col-md-6">
                         <h4 class="mb-0">
@@ -38,7 +38,7 @@
     <div class="row">
         <div class="col-lg-8 mx-auto">
             <div class="card shadow">
-                <div class="card-header bg-warning text-dark">
+                <div class="card-header bg-pm-accent text-white">
                     <h5 class="mb-0">
                         <i class="bi bi-cash-coin"></i> Cash on Delivery (COD) Item Details
                     </h5>

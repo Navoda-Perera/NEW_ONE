@@ -11,7 +11,6 @@ use App\Http\Controllers\PM\PMDashboardController;
 use App\Http\Controllers\PM\PMItemController;
 use App\Http\Controllers\PM\PMSingleItemController;
 use App\Http\Controllers\CompanyController;
-use App\Http\Controllers\PostmanController;
 // use App\Http\Controllers\DeliveryController; // Temporarily commented out
 // use App\Http\Controllers\DispatchController; // Temporarily commented out
 // use App\Http\Controllers\PaymentController; // Temporarily commented out
@@ -113,11 +112,6 @@ Route::prefix('pm')->name('pm.')->group(function () {
         Route::get('/customers/create', [PMDashboardController::class, 'createCustomer'])->name('customers.create');
         Route::post('/customers', [PMDashboardController::class, 'storeCustomer'])->name('customers.store');
 
-        // Postman management
-        Route::get('/postmen', [PMDashboardController::class, 'postmen'])->name('postmen.index');
-        Route::get('/postmen/create', [PMDashboardController::class, 'createPostman'])->name('postmen.create');
-        Route::post('/postmen', [PMDashboardController::class, 'storePostman'])->name('postmen.store');
-
         // User status toggle
         Route::patch('/users/{user}/toggle-status', [PMDashboardController::class, 'toggleUserStatus'])->name('users.toggle-status');
 
@@ -136,6 +130,8 @@ Route::prefix('pm')->name('pm.')->group(function () {
         // Customer uploads management
         Route::get('/customer-uploads', [PMDashboardController::class, 'customerUploads'])->name('customer-uploads');
         Route::get('/view-customer-upload/{id}', [PMDashboardController::class, 'viewCustomerUpload'])->name('view-customer-upload');
+        Route::get('/customer-upload/{id}/receipt', [PMDashboardController::class, 'viewCustomerUploadReceipt'])->name('view-customer-upload-receipt');
+        Route::get('/customer-upload/{id}/print-receipt', [PMDashboardController::class, 'printCustomerUploadReceipt'])->name('print-customer-upload-receipt');
         Route::post('/accept-all-upload/{id}', [PMDashboardController::class, 'acceptAllUpload'])->name('accept-all-upload');
         Route::post('/accept-selected-upload/{id}', [PMDashboardController::class, 'acceptSelectedUpload'])->name('accept-selected-upload');
 

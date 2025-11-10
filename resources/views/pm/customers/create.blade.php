@@ -13,11 +13,6 @@
             <i class="bi bi-people"></i> Customers
         </a>
     </li>
-    <li class="nav-item">
-        <a class="nav-link" href="{{ route('pm.postmen.index') }}">
-            <i class="bi bi-person-badge"></i> Postmen
-        </a>
-    </li>
 @endsection
 
 @section('content')

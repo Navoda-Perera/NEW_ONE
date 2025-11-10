@@ -87,7 +87,7 @@
                                 <tr>
                                     <td>
                                         <div class="d-flex align-items-center justify-content-center">
-                                            <div class="bg-danger text-white rounded-circle d-flex align-items-center justify-content-center"
+                                            <div class="bg-pm-accent text-white rounded-circle d-flex align-items-center justify-content-center"
                                                  style="width: 35px; height: 35px; font-size: 14px; font-weight: bold;">
                                                 {{ strtoupper(substr($customer->name, 0, 1)) }}
                                             </div>
@@ -133,7 +133,7 @@
                                         @if($customer->is_active)
                                             <span class="badge bg-success">Active</span>
                                         @else
-                                            <span class="badge bg-danger">Inactive</span>
+                                            <span class="badge badge-pm-accent">Inactive</span>
                                         @endif
                                     </td>
                                     <td>

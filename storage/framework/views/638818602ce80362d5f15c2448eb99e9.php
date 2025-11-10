@@ -3,8 +3,8 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <meta name="csrf-token" content="{{ csrf_token() }}">
-    <title>@yield('title') - SL Post System</title>
+    <meta name="csrf-token" content="<?php echo e(csrf_token()); ?>">
+    <title><?php echo $__env->yieldContent('title'); ?> - SL Post System</title>
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
     <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.5/font/bootstrap-icons.css" rel="stylesheet">
     <style>
@@ -533,7 +533,7 @@
     <!-- Sidebar -->
     <div class="sidebar">
         <div class="sidebar-header">
-            <a href="{{ route('pm.dashboard') }}" class="logo">
+            <a href="<?php echo e(route('pm.dashboard')); ?>" class="logo">
                 <i class="bi bi-mailbox"></i>
                 <span>SL Post PM</span>
             </a>
@@ -541,47 +541,47 @@
 
         <nav class="sidebar-nav">
             <div class="nav-item">
-                <a href="{{ route('pm.dashboard') }}" class="nav-link {{ request()->routeIs('pm.dashboard') ? 'active' : '' }}">
+                <a href="<?php echo e(route('pm.dashboard')); ?>" class="nav-link <?php echo e(request()->routeIs('pm.dashboard') ? 'active' : ''); ?>">
                     <i class="bi bi-speedometer2"></i>
                     <span>Dashboard</span>
                 </a>
             </div>
 
             <div class="nav-item">
-                <a href="{{ route('pm.customers.index') }}" class="nav-link {{ request()->routeIs('pm.customers.*') ? 'active' : '' }}">
+                <a href="<?php echo e(route('pm.customers.index')); ?>" class="nav-link <?php echo e(request()->routeIs('pm.customers.*') ? 'active' : ''); ?>">
                     <i class="bi bi-people"></i>
                     <span>Customers</span>
                 </a>
             </div>
 
             <div class="nav-item">
-                <a href="{{ route('pm.single-item.index') }}" class="nav-link {{ request()->routeIs('pm.single-item.*') ? 'active' : '' }}">
+                <a href="<?php echo e(route('pm.single-item.index')); ?>" class="nav-link <?php echo e(request()->routeIs('pm.single-item.*') ? 'active' : ''); ?>">
                     <i class="bi bi-box-seam"></i>
                     <span>Add Single Item</span>
                 </a>
             </div>
 
             <div class="nav-item">
-                <a href="{{ route('pm.item-management.index') }}" class="nav-link {{ request()->routeIs('pm.item-management.*') ? 'active' : '' }}">
+                <a href="<?php echo e(route('pm.item-management.index')); ?>" class="nav-link <?php echo e(request()->routeIs('pm.item-management.*') ? 'active' : ''); ?>">
                     <i class="bi bi-search"></i>
                     <span>Item Management</span>
                 </a>
             </div>
 
             <div class="nav-item">
-                <a href="{{ route('pm.bulk-upload') }}" class="nav-link {{ request()->routeIs('pm.bulk-upload') ? 'active' : '' }}">
+                <a href="<?php echo e(route('pm.bulk-upload')); ?>" class="nav-link <?php echo e(request()->routeIs('pm.bulk-upload') ? 'active' : ''); ?>">
                     <i class="bi bi-cloud-upload"></i>
                     <span>Bulk Upload</span>
                 </a>
             </div>
 
             <div class="nav-item">
-                <a href="{{ route('pm.customer-uploads') }}" class="nav-link {{ request()->routeIs('pm.customer-uploads') ? 'active' : '' }}">
+                <a href="<?php echo e(route('pm.customer-uploads')); ?>" class="nav-link <?php echo e(request()->routeIs('pm.customer-uploads') ? 'active' : ''); ?>">
                     <i class="bi bi-inbox"></i>
                     <span>Customer Uploads</span>
-                    @if(isset($pendingItemsCount) && $pendingItemsCount > 0)
-                        <span class="notification-badge">{{ $pendingItemsCount }}</span>
-                    @endif
+                    <?php if(isset($pendingItemsCount) && $pendingItemsCount > 0): ?>
+                        <span class="notification-badge"><?php echo e($pendingItemsCount); ?></span>
+                    <?php endif; ?>
                 </a>
             </div>
         </nav>
@@ -590,10 +590,11 @@
         <div class="sidebar-user">
             <a href="#" class="sidebar-user-info">
                 <div class="sidebar-user-avatar">
-                    {{ strtoupper(substr(auth('pm')->user()->name, 0, 1)) }}
+                    <?php echo e(strtoupper(substr(auth('pm')->user()->name, 0, 1))); ?>
+
                 </div>
                 <div>
-                    <div style="font-size: 0.9rem; font-weight: 600;">{{ auth('pm')->user()->name }}</div>
+                    <div style="font-size: 0.9rem; font-weight: 600;"><?php echo e(auth('pm')->user()->name); ?></div>
                     <div style="font-size: 0.75rem; opacity: 0.8;">Postmaster</div>
                 </div>
             </a>
@@ -606,18 +607,19 @@
         <div class="top-header">
             <div class="d-flex justify-content-between align-items-center">
                 <div>
-                    <h1 class="page-title">@yield('title', 'PM Dashboard')</h1>
+                    <h1 class="page-title"><?php echo $__env->yieldContent('title', 'PM Dashboard'); ?></h1>
                 </div>
                 <div class="header-date">
                     <i class="bi bi-calendar3 text-primary"></i>
-                    {{ now()->format('M d, Y') }}
+                    <?php echo e(now()->format('M d, Y')); ?>
+
                 </div>
             </div>
         </div>
 
         <!-- Content Area -->
         <div class="content-wrapper">
-            @yield('content')
+            <?php echo $__env->yieldContent('content'); ?>
         </div>
     </div>
 
@@ -626,6 +628,7 @@
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
 
     <!-- Custom Scripts Section -->
-    @yield('scripts')
+    <?php echo $__env->yieldContent('scripts'); ?>
 </body>
 </html>
+<?php /**PATH C:\Users\User\Desktop\NEW_ONE\resources\views/layouts/modern-pm.blade.php ENDPATH**/ ?>

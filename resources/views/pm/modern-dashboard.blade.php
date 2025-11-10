@@ -140,13 +140,6 @@
     </div>
 
     <div class="col-xl-3 col-md-6">
-        <a href="{{ route('pm.postmen.index') }}" class="action-btn">
-            <i class="bi bi-person-badge"></i>
-            <span>Manage Postmen</span>
-        </a>
-    </div>
-
-    <div class="col-xl-3 col-md-6">
         <a href="#" class="action-btn">
             <i class="bi bi-graph-up"></i>
             <span>View Reports</span>

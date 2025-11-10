@@ -50,7 +50,6 @@ if (file_exists($layoutFile)) {
         'bi-cloud-upload-fill' => 'Bulk Upload',
         'bi-inbox-fill' => 'Customer Uploads',
         'bi-people-fill' => 'Customers',
-        'bi-person-badge-fill' => 'Postmen',
         'bi-search-heart' => 'Item Management'
     ];
 
@@ -106,8 +105,7 @@ $pmRoutes = [
     'pm.bulk-upload' => 'Bulk Upload',
     'pm.customer-uploads' => 'Customer Uploads',
     'pm.customers.index' => 'Customers',
-    'pm.item-management.index' => 'Item Management',
-    'pm.postmen.index' => 'Postmen'
+    'pm.item-management.index' => 'Item Management'
 ];
 
 foreach ($pmRoutes as $route => $description) {

@@ -108,7 +108,7 @@ class PMDashboardController extends Controller
         // Get only the PM's assigned location
         $locations = Location::where('id', $currentUser->location_id)->get();
 
-        return view('pm.create-customer', compact('locations'));
+        return view('pm.customers.modern-create', compact('locations'));
     }
 
     public function storeCustomer(Request $request)
@@ -117,8 +117,10 @@ class PMDashboardController extends Controller
 
         $request->validate([
             'name' => 'required|string|max:255',
-            'email' => 'required|string|email|max:255|unique:users',
             'nic' => 'required|string|max:12|unique:users',
+            'company_name' => 'nullable|string|max:255',
+            'company_br' => 'nullable|string|max:50',
+            'email' => 'nullable|string|email|max:255|unique:users',
             'mobile' => 'required|string|max:15',
             'address' => 'required|string|max:500',
             'password' => 'required|string|min:8|confirmed',
@@ -127,17 +129,20 @@ class PMDashboardController extends Controller
         // Create customer with PM's location only
         User::create([
             'name' => $request->name,
-            'email' => $request->email,
             'nic' => $request->nic,
+            'company_name' => $request->company_name,
+            'company_br' => $request->company_br,
+            'email' => $request->email,
             'mobile' => $request->mobile,
             'address' => $request->address,
             'password' => bcrypt($request->password),
+            'user_type' => 'external',
             'role' => 'customer',
             'location_id' => $currentUser->location_id, // Assign to PM's location
             'is_active' => true,
         ]);
 
-        return redirect()->route('pm.customers.index')->with('success', 'Customer created successfully!');
+        return redirect()->route('pm.customers.index')->with('success', 'Customer created successfully! Customer can now login to their account.');
     }
 
     public function customerUploads(Request $request)
@@ -193,81 +198,6 @@ class PMDashboardController extends Controller
         ];
 
         return view('pm.customer-uploads', compact('uploads', 'serviceTypeLabels'));
-    }
-
-    public function postmen(Request $request)
-    {
-        $currentUser = Auth::guard('pm')->user();
-
-        // Ensure user is authenticated and has location_id
-        if (!$currentUser || !$currentUser->location_id) {
-            return redirect()->route('pm.login')->with('error', 'Please login to access the dashboard.');
-        }
-
-        // Get postmen assigned to this PM's location only
-        $postmenQuery = User::with(['location'])
-            ->where('role', 'postman')
-            ->where('location_id', $currentUser->location_id);
-
-        // Apply search filter
-        if ($request->has('search') && $request->search) {
-            $search = $request->search;
-            $postmenQuery->where(function($q) use ($search) {
-                $q->where('name', 'like', "%{$search}%")
-                  ->orWhere('email', 'like', "%{$search}%")
-                  ->orWhere('nic', 'like', "%{$search}%")
-                  ->orWhere('mobile', 'like', "%{$search}%");
-            });
-        }
-
-        $postmen = $postmenQuery->orderBy('created_at', 'desc')
-            ->paginate(15);
-
-        return view('pm.postmen', compact('postmen'));
-    }
-
-    public function createPostman()
-    {
-        $currentUser = Auth::guard('pm')->user();
-
-        // Ensure user is authenticated and has location_id
-        if (!$currentUser || !$currentUser->location_id) {
-            return redirect()->route('pm.login')->with('error', 'Please login to access the dashboard.');
-        }
-
-        // Get only the PM's assigned location
-        $locations = Location::where('id', $currentUser->location_id)->get();
-
-        return view('pm.create-postman', compact('locations'));
-    }
-
-    public function storePostman(Request $request)
-    {
-        $currentUser = Auth::guard('pm')->user();
-
-        $request->validate([
-            'name' => 'required|string|max:255',
-            'email' => 'required|string|email|max:255|unique:users',
-            'nic' => 'required|string|max:12|unique:users',
-            'mobile' => 'required|string|max:15',
-            'address' => 'required|string|max:500',
-            'password' => 'required|string|min:8|confirmed',
-        ]);
-
-        // Create postman with PM's location only
-        User::create([
-            'name' => $request->name,
-            'email' => $request->email,
-            'nic' => $request->nic,
-            'mobile' => $request->mobile,
-            'address' => $request->address,
-            'password' => bcrypt($request->password),
-            'role' => 'postman',
-            'location_id' => $currentUser->location_id, // Assign to PM's location
-            'is_active' => true,
-        ]);
-
-        return redirect()->route('pm.postmen.index')->with('success', 'Postman created successfully!');
     }
 
     public function toggleUserStatus(User $user)
@@ -580,7 +510,7 @@ class PMDashboardController extends Controller
         DB::beginTransaction();
         try {
             $temporaryUpload = TemporaryUpload::findOrFail($uploadId);
-            
+
             // Get all pending items with barcodes from this upload
             $pendingItems = TemporaryUploadAssociate::where('temporary_id', $temporaryUpload->id)
                 ->where('status', 'pending')
@@ -652,12 +582,12 @@ class PMDashboardController extends Controller
                 // Calculate amounts based on service type logic
                 $codAmount = $allItems->sum('amount'); // COD amounts from items
                 $postageAmount = $pendingItems->sum('postage'); // Postage from temp uploads
-                
+
                 // Total calculation based on service types:
                 // - COD: postage + amount
                 // - SLP Courier/Register Post: postage only (no COD amount)
                 $totalAmount = $codAmount + $postageAmount;
-                
+
                 Receipt::create([
                     'item_quantity' => $allItems->count(),
                     'item_bulk_id' => $itemBulk->id,
@@ -673,7 +603,7 @@ class PMDashboardController extends Controller
 
             DB::commit();
 
-            return back()->with('success', "Successfully accepted {$acceptedCount} items from upload #{$temporaryUpload->id} into ItemBulk #{$itemBulk->id}. " . 
+            return back()->with('success', "Successfully accepted {$acceptedCount} items from upload #{$temporaryUpload->id} into ItemBulk #{$itemBulk->id}. " .
                                          "Receipt created for all accepted items.");
 
         } catch (\Exception $e) {
@@ -692,7 +622,7 @@ class PMDashboardController extends Controller
         DB::beginTransaction();
         try {
             $temporaryUpload = TemporaryUpload::findOrFail($uploadId);
-            
+
             // Get selected pending items with barcodes from this upload
             $selectedItems = TemporaryUploadAssociate::where('temporary_id', $temporaryUpload->id)
                 ->whereIn('id', $request->selected_items)
@@ -765,12 +695,12 @@ class PMDashboardController extends Controller
                 // Calculate amounts based on service type logic
                 $codAmount = $allItems->sum('amount'); // COD amounts from items
                 $postageAmount = $selectedItems->sum('postage'); // Postage from selected temp uploads
-                
+
                 // Total calculation based on service types:
-                // - COD: postage + amount  
+                // - COD: postage + amount
                 // - SLP Courier/Register Post: postage only (no COD amount)
                 $totalAmount = $codAmount + $postageAmount;
-                
+
                 Receipt::create([
                     'item_quantity' => $allItems->count(),
                     'item_bulk_id' => $itemBulk->id,
@@ -786,7 +716,7 @@ class PMDashboardController extends Controller
 
             DB::commit();
 
-            return back()->with('success', "Successfully accepted {$acceptedCount} selected items from upload #{$temporaryUpload->id} into ItemBulk #{$itemBulk->id}. " . 
+            return back()->with('success', "Successfully accepted {$acceptedCount} selected items from upload #{$temporaryUpload->id} into ItemBulk #{$itemBulk->id}. " .
                                          "Receipt created for all accepted items.");
 
         } catch (\Exception $e) {
@@ -798,6 +728,114 @@ class PMDashboardController extends Controller
     public function showBulkUploadTemplate()
     {
         return response()->download(public_path('templates/pm-bulk-upload-template.csv'));
+    }
+
+    /**
+     * View receipt for accepted customer upload
+     */
+    public function viewCustomerUploadReceipt($uploadId)
+    {
+        $currentUser = Auth::guard('pm')->user();
+
+        // Find the temporary upload for PM's location
+        $upload = \App\Models\TemporaryUpload::with(['user', 'location'])
+            ->where('location_id', $currentUser->location_id)
+            ->findOrFail($uploadId);
+
+        // Find accepted items from this upload by matching barcodes
+        $acceptedAssociates = \App\Models\TemporaryUploadAssociate::where('temporary_id', $upload->id)
+            ->where('status', 'accept')
+            ->whereNotNull('barcode')
+            ->get();
+
+        if ($acceptedAssociates->isEmpty()) {
+            return back()->with('error', 'No accepted items found for this upload. Please accept some items first.');
+        }
+
+        // Find items that match these barcodes
+        $barcodes = $acceptedAssociates->pluck('barcode')->filter();
+        $items = \App\Models\Item::whereIn('barcode', $barcodes)->get();
+
+        if ($items->isEmpty()) {
+            return back()->with('error', 'No items found in system for accepted uploads.');
+        }
+
+        // Get the ItemBulk from the first item (they should all belong to the same bulk)
+        $itemBulk = $items->first()->itemBulk;
+
+        if (!$itemBulk) {
+            return back()->with('error', 'No ItemBulk found for accepted items.');
+        }
+
+        // Find the receipt for this ItemBulk
+        $receipt = \App\Models\Receipt::where('item_bulk_id', $itemBulk->id)->first();
+
+        if (!$receipt) {
+            return back()->with('error', 'No receipt found for this upload. Receipt may not have been created.');
+        }
+
+        // Load relationships for the receipt
+        $receipt->load([
+            'itemBulk.creator.location',
+            'itemBulk.items.smsSents',
+            'location'
+        ]);
+
+        return view('pm.customer-upload-receipt', compact('receipt', 'upload'));
+    }
+
+    /**
+     * Print receipt for accepted customer upload
+     */
+    public function printCustomerUploadReceipt($uploadId)
+    {
+        $currentUser = Auth::guard('pm')->user();
+
+        // Find the temporary upload for PM's location
+        $upload = \App\Models\TemporaryUpload::with(['user', 'location'])
+            ->where('location_id', $currentUser->location_id)
+            ->findOrFail($uploadId);
+
+        // Find accepted items from this upload by matching barcodes
+        $acceptedAssociates = \App\Models\TemporaryUploadAssociate::where('temporary_id', $upload->id)
+            ->where('status', 'accept')
+            ->whereNotNull('barcode')
+            ->get();
+
+        if ($acceptedAssociates->isEmpty()) {
+            return back()->with('error', 'No accepted items found for this upload.');
+        }
+
+        // Find items that match these barcodes
+        $barcodes = $acceptedAssociates->pluck('barcode')->filter();
+        $items = \App\Models\Item::whereIn('barcode', $barcodes)->get();
+
+        if ($items->isEmpty()) {
+            return back()->with('error', 'No items found in system for accepted uploads.');
+        }
+
+        // Get the ItemBulk from the first item
+        $itemBulk = $items->first()->itemBulk;
+
+        if (!$itemBulk) {
+            return back()->with('error', 'No ItemBulk found for accepted items.');
+        }
+
+        // Find the receipt for this ItemBulk
+        $receipt = \App\Models\Receipt::where('item_bulk_id', $itemBulk->id)->first();
+
+        if (!$receipt) {
+            return back()->with('error', 'No receipt found for this upload.');
+        }
+
+        // Load relationships for the receipt
+        $receipt->load([
+            'itemBulk.creator.location',
+            'itemBulk.items.smsSents',
+            'location'
+        ]);
+
+        return view('pm.customer-upload-print-receipt', compact('receipt', 'upload'));
     }
 
     /**

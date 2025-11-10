@@ -72,14 +72,6 @@ class User extends Authenticatable
     }
 
     /**
-     * Check if user is postman
-     */
-    public function isPostman(): bool
-    {
-        return $this->role === 'postman';
-    }
-
-    /**
      * Check if user is customer
      */
     public function isCustomer(): bool

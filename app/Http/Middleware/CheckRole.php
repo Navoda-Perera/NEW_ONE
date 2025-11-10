@@ -24,8 +24,6 @@ class CheckRole
             $guard = 'admin';
         } elseif ($request->is('pm/*')) {
             $guard = 'pm';
-        } elseif ($request->is('postman/*')) {
-            $guard = 'postman';
         } elseif ($request->is('customer/*')) {
             $guard = 'customer';
         }

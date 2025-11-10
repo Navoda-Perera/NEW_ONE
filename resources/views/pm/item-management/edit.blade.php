@@ -28,11 +28,6 @@
             <i class="bi bi-cloud-upload"></i> Bulk Upload
         </a>
     </li>
-    <li class="nav-item">
-        <a class="nav-link" href="{{ route('pm.postmen.index') }}">
-            <i class="bi bi-person-badge"></i> Postmen
-        </a>
-    </li>
 @endsection
 
 @section('content')
@@ -210,7 +205,7 @@
 
             <!-- Actions Card -->
             <div class="card shadow-sm">
-                <div class="card-header bg-danger text-white">
+                <div class="card-header bg-pm-primary text-white">
                     <h6 class="card-title mb-0">
                         <i class="bi bi-exclamation-triangle"></i> Danger Zone
                     </h6>

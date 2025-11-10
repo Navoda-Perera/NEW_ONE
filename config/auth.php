@@ -48,10 +48,6 @@ return [
             'driver' => 'session',
             'provider' => 'pms',
         ],
-        'postman' => [
-            'driver' => 'session',
-            'provider' => 'postmen',
-        ],
         'customer' => [
             'driver' => 'session',
             'provider' => 'customers',
@@ -85,10 +81,6 @@ return [
             'model' => App\Models\User::class,
         ],
         'pms' => [
-            'driver' => 'eloquent',
-            'model' => App\Models\User::class,
-        ],
-        'postmen' => [
             'driver' => 'eloquent',
             'model' => App\Models\User::class,
         ],
